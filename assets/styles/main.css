@@ -1,0 +1,139 @@
+* {
+  box-sizing: border-box;
+  font-family: 'New Rocker', cursive;
+}
+
+body {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.map {
+  position: absolute;
+  transform-origin: 0% 0%;
+  top: 0;
+  width: 0;
+}
+
+.map > .isometric-wrapper{
+  transform-origin: 0% 0%;
+  transform: rotateX(60deg) rotateZ(40deg);
+  box-shadow: 4px 4px 4px 4px #5f5f5f;
+}
+
+.isometric-wrapper > svg {
+  display: block;
+  position: absolute;
+}
+
+.ui {
+  top: 0;
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  user-select: none;
+}
+
+.ui > .info {
+  width: 256px;
+  height: calc(100vh - 16px);
+  backdrop-filter: blur(8px);
+  margin: 8px 0;
+  border-radius: 0 8px 8px 0;
+  padding: 8px;
+  box-shadow: 0px 2px 2px 2px #0000001f;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ui > .info > div{
+  margin-bottom: 8px;
+}
+
+.ui > .info::before{
+  content: " ";
+  background-image: url("../images/info-background.jpg");
+  position: absolute;
+  top: 0;
+  lefT: 0;
+  width: 256px;
+  height: calc(100vh - 16px);
+  opacity: 0.9;
+  z-index: -1;
+}
+
+.ui > .info > h3 {
+  align-self: center;
+}
+
+.ui .commands-end-turn-wrapper{
+  margin: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 0;
+}
+.ui .commands {
+  display: flex;
+  flex-direction: column;
+  height: max-content;
+  width: max-content;
+  padding: 8px;
+  background: linear-gradient(#b15700ef, #67310bef);
+  box-shadow: 0px 2px 1px 1px #000000;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+}
+
+.ui .commands > div.button.command-button {
+  display: block;
+  background: radial-gradient(#21201b, #382516);
+  color: #f3a25a;
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  text-align: center;
+  display: flex;
+  align-self: center;
+  justify-content: center;
+  user-select: none;
+  cursor: pointer;
+  border: solid 1px #372d2c;
+  box-shadow: 0 2px 2px 0 #0000001f;
+}
+
+.ui .commands > div.button.command-button:first-child{
+  margin-top: 4px;
+}
+
+.ui .commands > div.button.command-button:hover {
+  background: radial-gradient(#4d2d17, #382516);
+}
+
+.ui .commands > div.button.command-button.selected {
+  background: radial-gradient(#a63800, #b82200);
+  color: #ffdf00;
+}
+
+.ui a.end-turn {
+  display: flex;
+  width: max-content;
+  border-radius: 8px;
+  flex: 0 1 auto;
+  flex-direction: column;
+  padding: 8px 20px;
+  background-color: #382516;
+  color: #ffdf00;
+}
