@@ -3,11 +3,25 @@ import _, {useEffect, useState} from "../util/easyjs.js";
 import EasyDOM from "../util/easy-dom.js";
 
 export default class UI{
-  constructor(){}
+  constructor(){
+    this._resolveFunctions = new Map();
+  }
 
   render(gameObject, res){
-    this._dom = new UIComponent({gameObject, res});
-    EasyDOM.render(this._dom, document.getElementById('game'));
+    this._focus = gameObject;
+    this._resolveFunctions.set(gameObject, res);
+    this.update(gameObject);
+  }
+
+  update(gameObject, res){
+    if (this._focus === gameObject){
+      EasyDOM.unmount(this._dom, document.getElementById('game'));
+      this._dom = new UIComponent({
+        gameObject, 
+        res: this._resolveFunctions.get(gameObject),
+      });
+      EasyDOM.render(this._dom, document.getElementById('game'));
+    }
   }
 }
 
@@ -48,7 +62,7 @@ function UIComponent(props = {}){
   this.props = props;
 
   const { gameObject, res } = props;
-  const { information, commands } = gameObject;
+  const { information, commands } = gameObject.toUserInterface();
   const [_selectedIndex, _setSelectedIndex] = useState.call(this);
 
   return (

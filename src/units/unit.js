@@ -116,7 +116,7 @@ export class Unit{
       Math.min(newState.hungerLevel - 1, 0) + 
       Math.min(newState.tiredNessLevel / 2 - 1, 0) + 
       newState.pandemicStage
-    ) / 25 | 1;
+    ) / 25 | 0;
 
     switch (action.type){
       case 'rest': {
@@ -172,8 +172,14 @@ export class Unit{
     }
   }
 
-  saveAction(action){ action && this._actionQueue.push(action); }
-  dispatch(){ this.state = actionReducer(this.state, action); }
+  saveAction(action){ 
+    if (action)
+      this._actionQueue[0] = action;
+  }
+  dispatch(action){
+    this.state = this.actionReducer(action);
+    this.player.update(this);
+  }
   endTurn(){
     if (this.state.movePoints >= 0){
       dispatchAction(this.actionQueue.shift());
@@ -191,8 +197,20 @@ export class Unit{
   // raid:    cancel if 1) enemy is spotted in the surrounding; 2) destination is reached; or 3) food is barely enough to go back to camptile and destination tile is not camptile
   //          else: move to the target tile immediately; next command is still march 
 
-  rest(){ this.saveAction({type: 'rest'}); console.log(this);}
-  guard(formation){ this.saveAction({type: 'guard', formation}); }
+  rest(){ 
+    this.saveAction({
+      type: 'rest',
+      nextCommand: {type: 'rest'}
+    });
+  }
+
+  guard(formation){
+    this.saveAction({
+      type: 'guard', formation,
+      nextCommand: {type: 'guard', formation}
+    });
+  }
+
   march(destinationTile, formation, path){
     if (destinationTile === this.tile) return;
 
@@ -214,15 +232,26 @@ export class Unit{
     }
   }
   
-  pillage(targetTile){
-    let {playerId} = this;
+  pillage(){
+    const {playerId} = this;
+    const self = this;
 
-    targetTile.rangeAssign(2, function(distance){
-      if (this.playerId !== playerId)
-        this.attitudes[playerId] -= (3 - distance) * this.population / 65536;
+    this.tile.rangeAssign(2, function(distance){
+      if (this.playerId !== playerId){
+        let attitude = this.attitudes[playerId] || 0;
+        this.attitudes[playerId] = attitude - (3 - distance) * self.population / 65536;
+      }
     });
 
-    this.saveAction({type: 'pillage'});
+    const isAttacked = Math.random() <= -this.tile.attitudes[playerId]
+    const casualty = isAttacked ? Math.random() * 100 | 0 : 0;
+
+    this.dispatch({
+      type: 'pillage', 
+      casualty
+    });
+
+    console.log(this, isAttacked, casualty);
   }
 
   raid(destinationTile, formation){

@@ -97,9 +97,14 @@ export default class Game{
   }
 
   focus(gameObject, res){
-    this.ui.render(gameObject.toUserInterface(), res);
+    this.ui.render(gameObject, res);
     this.renderer.focus(gameObject);
   }
+
+  update(gameObject){
+    this.ui.update(gameObject);
+    // this.renderer.update(gameObject);
+  };
 
   addToScene(gameObject){ this.renderer.addToScene(gameObject); }
   removeFromScene(gameObject){ this.renderer.removeFromScene(gameObject); }

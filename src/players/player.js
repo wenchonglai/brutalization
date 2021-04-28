@@ -71,11 +71,15 @@ export default class Player{
     this.game.nextTurn();
   }
   
-  focus(object, res){
-    this._selected = object;
-    this.viewport.x = object.x;
-    this.viewport.y = object.y;
+  focus(gameObject, res){
+    this._selected = gameObject;
+    this.viewport.x = gameObject.x;
+    this.viewport.y = gameObject.y;
     //rerender using object and viewport info
+  }
+
+  update(gameObject){
+    this.game.update(gameObject);
   }
   
 }
