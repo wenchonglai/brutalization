@@ -1,5 +1,5 @@
 import createComponent from "../util/easyjs.js";
-import VirtualDOM from "../util/virtual-dom.js";
+import VirtualDOM, { VirtualCanvas } from "../util/virtual-dom.js";
 import {screenToMap, mapToScreen} from "../util/coordinate-converter.js";
 import SceneObject from "./scene-object.js";
 
@@ -76,35 +76,29 @@ class MapSVG extends VirtualDOM{
   }
 }
 
-class MapCanvas extends VirtualDOM{
-  constructor({
-    width, height, 
-  }){
-    super('canvas');
+class MapCanvas extends VirtualCanvas{
+  constructor(props){
+    super({...props, className: "map-canvas"});
 
-    this._ctx = this._dom.getContext('2d');
-    this._dom.width = this.ctx.width = width;
-    this._dom.height = this.ctx.height = height;
-
-    this.ctx.beginPath();
-    this.ctx.rect(0, 0, this.width, this.height);
-    this.ctx.fillStyle = "#5f9f3f";
-    this.ctx.fill();
-
-    this.ctx.beginPath();
-    this.ctx.rect(0, 0, this.width / 2, this.height / 2);
-    this.ctx.fillStyle = "green";
-    this.ctx.fill();
+    this.rect({x: 0, y: 0, width: this.width, height: this.height, fill: "#5f9f3f"});
   }
+}
 
-  get ctx(){ return this._ctx; }
-  get width(){ return this.ctx.width; }
-  get height(){ return this.ctx.height; }
+class UnitCanvas extends VirtualCanvas{
+  constructor(props){
+    super({...props, className: "unit-canvas"});
+  }
+}
+
+class AnnotationLayer extends VirtualDOM{
+  constructor({width, height}){
+    super('div', {className: "annotation-layer"});
+  }
 }
 
 export default class Renderer extends VirtualDOM{
   constructor({game}){
-    super('div');
+    super('div', {className: "renderer"});
 
     this._dom.id = 'map';
     this._dom.className = 'map';
@@ -123,27 +117,34 @@ export default class Renderer extends VirtualDOM{
     });
 
     this._mapCanvas = new MapCanvas({width: length, height: length});
+    this._unitCanvas = new UnitCanvas({width: length, height: length});
 
     this._isometricWrapper = createComponent('div', 
       {className: 'isometric-wrapper'},
-      this._mapSVG, this.mapCanvas
-    )
+      this.mapCanvas, this.unitCanvas, this._mapSVG
+    );
+
+    this._annotationLayer = new AnnotationLayer({
+      width: length, height: length,
+    });
 
     this._dragStartXY = {};
-    this._transformAttributes = {x: 0, y: 0, zoom: 1};
     this._highlightedGridXY = {};
 
     this.append(this._isometricWrapper);
+    this.append(this._annotationLayer);
 
-    this.transform(this._transformAttributes);
+    this.transform({x: 0, y: 0, zoom: 1});
   }
 
   get mapSVG(){ return this._mapSVG; }
   get mapCanvas(){ return this._mapCanvas; }
+  get unitCanvas(){ return this._unitCanvas; }
   get mapCtx(){ return this._mapCtx; }
   get canvasLength(){ return this._canvasLength; }
   get game(){return this.game;}
   get scene(){ return this.scene; }
+  get annotationLayer(){ return this._annotationLayer; }
 
   handleDragStart(e){
     this._dragMode = true;
@@ -160,14 +161,14 @@ export default class Renderer extends VirtualDOM{
     this._dragMode = false;
 
     this._transformAttributes = { x: x + dx, y: y + dy, zoom};
-    this.transform(this._transformAttributes);
+    this.transform(this._transformAttributes, false);
   }
   handleDrag(e){
     if (!this._dragMode){
       let {x, y} = screenToMap(e, {
-        translateX: this._transformAttributes.x,
-        translateY: this._transformAttributes.y,
-        zoom: this._transformAttributes.zoom
+        translateX: this._transformAttributes?.x || 0,
+        translateY: this._transformAttributes?.y || 0,
+        zoom: this._transformAttributes?.zoom || 1
       });
 
       x = x | 0; y = y | 0;
@@ -186,25 +187,30 @@ export default class Renderer extends VirtualDOM{
     const dx = e.x - this._dragStartXY.x;
     const dy = e.y - this._dragStartXY.y;
 
-    this.transform({x: x + dx, y: y + dy, zoom});
+
+    this._animationFrame = requestAnimationFrame( () => 
+      this.transform({x: x + dx, y: y + dy, zoom}, false)
+    );
   }
+
   handleScroll(e){
     const {x, y, zoom} = this._transformAttributes;
     const newZoom = Math.min(Math.max(1, zoom - e.deltaY / 64), 2);
-    
-    this._transformAttributes = {
+
+    this.transform({
       x: x * newZoom / zoom - e.x * (newZoom / zoom - 1),
       y: y * newZoom / zoom - e.y * (newZoom / zoom - 1),
       zoom: newZoom
-    }
-
-    this.transform(this._transformAttributes);
+    });
   }
 
-  transform({x, y, zoom}){ 
+  transform({x, y, zoom}, updateTransformAttributes = true){ 
     cancelAnimationFrame(this._animationFrame);
 
     this._animationFrame = requestAnimationFrame(() => {
+      if (updateTransformAttributes)
+        this._transformAttributes = {x, y, zoom};
+      
       let transformString = [
         `translate(${x}px, ${y}px) scale(${zoom})`
       ].join(' ');
@@ -214,9 +220,27 @@ export default class Renderer extends VirtualDOM{
   }
 
   addToScene(gameObject){
-    let sceneObject = new SceneObject(gameObject);
+    let sceneObject = new SceneObject({renderer: this, gameObject});
   }
   removeFromScene(gameObject){
-    
+    let sceneObject = SceneObject.getSceneObject(gameObject);
+    SceneObject.deleteSceneObject(gameObject)
+    sceneObject.destruct();
+  }
+
+  appendUnitAnnotation(unitAnnotation){
+    this.annotationLayer.append(unitAnnotation);
+  }
+
+  focus(gameObject){
+    let {x, y} = mapToScreen(gameObject);
+
+    this.transform({
+      x: (window.innerWidth >> 1) + 128 - x,
+      y: (window.innerHeight >> 1) - y,
+      zoom: this._transformAttributes?.zoom || 1
+    });
+
+    SceneObject.focus(gameObject);
   }
 }

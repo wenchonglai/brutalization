@@ -5,6 +5,13 @@ import Tile from "./tiles/tile.js";
 import UI from "./ui/ui.js";
 import { Unit } from "./units/unit.js";
 
+const PLAYER_COLORS = [
+  '#4f9fbf',
+  '#df7f7f',
+  '#00bf00',
+  '#9f7fff',
+];
+
 export default class Game{
   constructor({numberOfPlayers = 2, mapSize = 16} = {}){
     this._players = [];
@@ -16,7 +23,8 @@ export default class Game{
 
     for (let id = 0; id < numberOfPlayers; id ++)
       this.players[id] = new (id ? AIPlayer : HumanPlayer)({
-        game: this, id
+        game: this, id,
+        color: PLAYER_COLORS[id]
       });
 
     this.#_initialize();
@@ -59,6 +67,21 @@ export default class Game{
       player: this.currentPlayer, tile: Tile.getTile([2, 0]),
       population: 12500
     });
+
+    new Unit({
+      player: this.players[1], tile: Tile.getTile([2, 2]),
+      population: 2500
+    });
+
+    new Unit({
+      player: this.players[1], tile: Tile.getTile([5, 5]),
+      population: 5000
+    });
+
+    new Unit({
+      player: this.players[1], tile: Tile.getTile([3, 0]),
+      population: 12500
+    });
     
     // generate player home location
 
@@ -75,6 +98,7 @@ export default class Game{
 
   focus(gameObject, res){
     this.ui.render(gameObject.toUserInterface(), res);
+    this.renderer.focus(gameObject);
   }
 
   addToScene(gameObject){ this.renderer.addToScene(gameObject); }

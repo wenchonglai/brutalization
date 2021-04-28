@@ -10,6 +10,7 @@ body {
   overflow: hidden;
   margin: 0;
   padding: 0;
+  background: linear-gradient(#373f57, #272f37);
 }
 
 a {
@@ -27,12 +28,15 @@ a {
 .map > .isometric-wrapper{
   transform-origin: 0% 0%;
   transform: rotateX(60deg) rotateZ(40deg);
-  box-shadow: 4px 4px 4px 4px #5f5f5f;
 }
 
-.isometric-wrapper > svg {
+.isometric-wrapper > :first-child {
+  box-shadow: 8px 8px 4px 4px #0000007f;
+}
+
+.isometric-wrapper > svg, .isometric-wrapper > canvas {
   display: block;
-  position: absolute;
+  position: absolute; 
 }
 
 .ui {
@@ -136,4 +140,58 @@ a {
   padding: 8px 20px;
   background-color: #382516;
   color: #ffdf00;
+}
+
+div.unit-indicator{
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #cfcfcf;
+  user-select: none;
+  transform-origin: 50% 44px;
+  transform: translate(-50%, -50px) scale(0.8);
+  text-align: center;
+  font-size: 22px;
+  line-height: 36px;
+  cursor: pointer;
+  box-sizing: border-box;
+  border: 2px solid #bfbfbf;
+  box-shadow: 1px 1px 0 0 #000000;
+}
+
+div.unit-indicator::before{
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 3.6px) rotate(45deg);
+  transform-origin: 50% 50%;
+  background-color: inherit;
+  z-index: -1;
+  box-sizing: border-box;
+  border: 2px solid;
+  border-top: none;
+  border-left: none;
+  border-color: inherit;
+  box-shadow: 1.4px 0px 0 -0.1px #000000;
+}
+
+div.unit-indicator:hover, div.unit-indicator:hover::before{
+  border-color: #dfdfdf;
+}
+
+div.unit-indicator.active, div.unit-indicator.active::before{
+  border-color: #ffffff;
+  border-width: 3px;
+}
+
+div.unit-indicator.active {
+  transform: translate(-50%, -50px);
+}
+
+div.unit-indicator::before.active{
+  box-shadow: 0px 32px 12px #0000001f;
 }

@@ -1,15 +1,17 @@
 export default class Player{
-  constructor({game, id}){
-    this._game = game;
+  constructor({id, game, color}){
     this._id = id;
+    this._game = game;
+    this._color = color;
     this._cities = new Set();
     this._units = new Set();
     this._viewport = {x: 0, y: 0};
     this._selected = undefined;
     this._isTurn = true;
   }
-  get game(){ return this._game; }
   get id(){ return this._id; }
+  get game(){ return this._game; }
+  get color(){ return this._color; }
   get cities(){ return this._cities; }
   get units(){ return this._units; }
   get viewport(){ return this._viewport; }

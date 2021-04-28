@@ -26,8 +26,8 @@ export class Unit{
     this.register({player, tile});
   }
   register({player, tile}){
-    player?.register(this);
     tile?.register(this);
+    player?.register(this);
   }
   get originalState(){ return this._originalState; }
   get state(){ return this._state; }
@@ -182,6 +182,14 @@ export class Unit{
   }
 
   /* User commands */
+  // rest:    add action to action queue; next command is still rest; clear action queue if no food or tireness is 0
+  //          cannot rest if camp tile is not current tile
+  // guard:   add action to action queue; next command is still guard; clear action queue if no food or enemy is spotted
+  // pillage: execute action immediately
+  // march:   cancel if enemy is spotted in the surrounding or destination is reached
+  //          else: move to the target tile immediately; next command is still march until reaching the destination
+  // raid:    cancel if 1) enemy is spotted in the surrounding; 2) destination is reached; or 3) food is barely enough to go back to camptile and destination tile is not camptile
+  //          else: move to the target tile immediately; next command is still march 
 
   rest(){ this.saveAction({type: 'rest'}); console.log(this);}
   guard(formation){ this.saveAction({type: 'guard', formation}); }
