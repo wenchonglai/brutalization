@@ -11,25 +11,13 @@ export default class HumanPlayer extends Player{
     
     for (let unit of idleUnits){
       await new Promise(resolve => {
-        if (unit.movePoints < 0) resolve()
+        if (unit.tasked) resolve()
         else this.focus(unit, resolve);
       });
 
       this._unresolved.delete(unit);
     }
-      
-    this._endable = true;
+
   }
 
-  async finishTurn(){
-    let idleUnits = this.findIdleUnits();
-
-    while (idleUnits.length > 0){
-      await this.promptAction(idleUnits);
-
-      idleUnits = this.findIdleUnits();
-    }
-
-    // this.game.nextTurn();
-  }
 }

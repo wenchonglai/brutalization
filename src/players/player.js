@@ -1,10 +1,13 @@
+import { Improvement } from "../tiles/improvement.js";
+import { Settlement } from "../tiles/settlement.js";
+
 export default class Player{
   constructor({id, game, color}){
     this._id = id;
     this._game = game;
     this._color = color;
-    this._cities = new Set();
     this._units = new Set();
+    this._settlements = new Set();
     this._viewport = {x: 0, y: 0};
     this._selected = undefined;
     this._isTurn = true;
@@ -12,7 +15,7 @@ export default class Player{
   get id(){ return this._id; }
   get game(){ return this._game; }
   get color(){ return this._color; }
-  get cities(){ return this._cities; }
+  get settlements(){ return this._settlements; }
   get units(){ return this._units; }
   get viewport(){ return this._viewport; }
   get selected(){ return this._selected; }
@@ -28,13 +31,13 @@ export default class Player{
   }
 
   deregister(gameObject){
+    this.game.removeFromScene(gameObject);
+
     gameObject._player = undefined;
     
     if (gameObject instanceof Unit) this.units.delete(gameObject)
     else if (gameObject instanceof Settlement) this.settlements.delete(gameObject)
     else if (gameObject instanceof Improvement) this.improvements.delete(gameObject);
-
-    this.game.removeFromScene(gameObject);
   }
 
   findIdleUnits(){
@@ -70,10 +73,13 @@ export default class Player{
   
   endTurn(){
     this._isTurn = false;
+
     for (let unit of this.units){
       unit.endTurn();
     }
+
     this.deactivate();
+    this.game.nextTurn();
   }
 }
 

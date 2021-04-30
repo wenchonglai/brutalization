@@ -3,15 +3,18 @@ import Player from "./player.js";
 export default class AIPlayer extends Player{
   async promptAction(idleUnits){
     for (let unit of idleUnits)
-      if (unit.movePoints < 0) {}
+      if (unit.movePoints < 0) {
+        console.log('no move points')
+      }
       else if (unit.tiredNessLevel > 1){
+        console.log('too tired')
           unit.rest();
       } else {
         let path = unit.tile.bfs(tile => tile.hasEnemy(unit), tile => tile);
-
-        if (path){
+        if (path)
           unit.raid(path[path.length - 1], [0, 0]);
-        }
       }
+    
+    this.endTurn();
   }
 }

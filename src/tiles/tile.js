@@ -42,6 +42,7 @@ export default class Tile {
     this._totalLaborTime = 0;
     this._trainLevel = 0;
     this._attitudes = {};
+    this._food = 0;
 
     Tile.setTile({x, y}, this);
   }
@@ -97,9 +98,6 @@ export default class Tile {
     urban += ( urban - drafted * urban / (rural + urban) ) / 8 | 1;
 
     Object.assign(this._populations, {rural, urban});
-    
-    // decrease train level
-    if (this._trainLevel > 0) this._trainLevel -= 1;
 
     // change attitude
     for (let key of Object.keys(this.attitudes)){

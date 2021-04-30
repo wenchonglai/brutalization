@@ -16,16 +16,16 @@ class GridLayer extends VirtualDOM{
     for (let i = 0; i < width; i += PIXEL_PER_GRID)
       this.append( 
         createComponent('path', {
-          d: `M ${i+32} 0 L ${i+32} ${height}`,
-          stroke: "#0000003f",
+          d: `M ${i} 0 L ${i} ${height}`,
+          stroke: "#0000001f",
         })
       );
 
     for (let i = 0; i < height; i += PIXEL_PER_GRID)
       this.append( 
         createComponent('path', {
-          d: `M 0 ${i+32} L ${width} ${i+32}`,
-          stroke: "#0000003f",
+          d: `M 0 ${i} L ${width} ${i}`,
+          stroke: "#0000001f",
         })
       );
     

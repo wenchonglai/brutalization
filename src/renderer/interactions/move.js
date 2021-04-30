@@ -53,7 +53,7 @@ function handleMouseMoveCreator(mode){
       let fx = 0;
       let fy = 0;
 
-      if (path.length >= 2){
+      if ((path?.length || 0) >= 2){
         let [p1, p2] = path.slice(-2);
 
         fx = p2.x - p1.x;
@@ -84,6 +84,8 @@ function handleMouseUpCreator(mode){
   return function handleMouseUp(e){
     const dragResult = handleMouseMoveCreator(mode).call(this, e);
 
+    path = undefined;
+
     if (dragResult?.path){
       this.command(dragResult.destinationTile, dragResult.formation, dragResult.path);
       this.game.ui.handleResolve();
@@ -94,6 +96,7 @@ function handleMouseUpCreator(mode){
 }
 
 function handleMouseLeave(e){
+  path = undefined;
   this._dragMode = false;
 }
 

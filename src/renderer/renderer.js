@@ -7,17 +7,23 @@ import {PIXEL_PER_GRID, MIN_ZOOM, MAX_ZOOM} from "../settings/map-settings.js";
 import {marchEventListeners, raidEventListeners} from "./interactions/move.js";
 
 class MapCanvas extends VirtualCanvas{
-  constructor(props){
+  constructor({renderer, ...props}){
     super({...props, className: "map-canvas"});
+    this._renderer = this;
 
-    this.rect({x: 0, y: 0, width: this.width, height: this.height, fill: "#5f9f3f"});
+    this.rect({x: 0, y: 0, width: this.width, height: this.height, fill: "#7f974f"});
   }
+  
+  get renderer(){ return this._renderer; }
 }
 
 class UnitCanvas extends VirtualCanvas{
-  constructor(props){
+  constructor({renderer, ...props}){
     super({...props, className: "unit-canvas"});
+    this._renderer = this;
   }
+
+  get renderer(){ return this._renderer; }
 }
 
 class AnnotationLayer extends VirtualDOM{
@@ -38,12 +44,13 @@ export default class Renderer extends VirtualDOM{
     this._dragMode = false;
     this._dragged = false;
     this._eventListeners = {};
+    this._texture = document.getElementById('improvements');
 
     const length = game.mapSize * PIXEL_PER_GRID;
 
-    this._mapSVG = new MapSVG({width: length, height: length});
-    this._mapCanvas = new MapCanvas({width: length, height: length});
-    this._unitCanvas = new UnitCanvas({width: length, height: length});
+    this._mapSVG = new MapSVG({width: length, height: length, renderer: this});
+    this._mapCanvas = new MapCanvas({width: length, height: length, renderer: this});
+    this._unitCanvas = new UnitCanvas({width: length, height: length, renderer: this});
 
     this._isometricWrapper = createComponent('div', 
       {className: 'isometric-wrapper'},
@@ -63,6 +70,16 @@ export default class Renderer extends VirtualDOM{
     this.changeMapInteraction("", {});
 
     this.transform({x: 0, y: 0, zoom: 1});
+
+    document.addEventListener('keydown', (e) => {
+      switch (e.key){
+        case 'ArrowDown': this.scroll(0, -1, e.shiftKey); break;
+        case 'ArrowUp': this.scroll(0, 1, e.shiftKey); break;
+        case 'ArrowLeft': this.scroll(1, 0, e.shiftKey); break;
+        case 'ArrowRight': this.scroll(-1, 0, e.shiftKey); break;
+        case 'Escape': {this.eventListeners.mouseleave()}; break;
+      }
+    });
   }
 
   get mapSVG(){ return this._mapSVG; }
@@ -80,6 +97,18 @@ export default class Renderer extends VirtualDOM{
   get transformAttributes(){ return this._transformAttributes; }
   get eventListeners(){ return this._eventListeners; }
   get command(){ return this._command; }
+  get texture(){ return this._texture; }
+
+  scroll(dx, dy, shiftKey){
+    const {x, y, zoom} = this.transformAttributes;
+    const coefficient = shiftKey ? 50 : 5;
+
+    this.transform({
+      x: x + dx * zoom * coefficient, 
+      y: y + dy * zoom * coefficient, 
+      zoom
+    });
+  }
 
   listenAll(eventListeners){
     for (let [type, func] of Object.entries(eventListeners)){
@@ -168,6 +197,7 @@ export default class Renderer extends VirtualDOM{
   }
 
   update(gameObject){
+    console.log(gameObject)
     SceneObject.getSceneObject(gameObject).update();
   }
   addToScene(gameObject){
@@ -179,22 +209,23 @@ export default class Renderer extends VirtualDOM{
     sceneObject.destruct();
   }
 
-  appendUnitAnnotation(unitAnnotation){
-    this.annotationLayer.append(unitAnnotation);
+  appendAnnotation(annotation){
+    this.annotationLayer.append(annotation);
   }
 
   focus(gameObject){
     this._gameObject = gameObject;
 
     if (gameObject){
-      let {x, y} = mapToScreen(gameObject);
+      const {x, y} = mapToScreen(gameObject);
+      const zoom = this._transformAttributes?.zoom ?? 1;
 
       this.mapSVG.reset();
-  
+
       this.transform({
-        x: (window.innerWidth >> 1) + 128 - x,
-        y: (window.innerHeight >> 1) - y,
-        zoom: this._transformAttributes?.zoom || 1
+        x: (window.innerWidth >> 1) + 128 - x * zoom,
+        y: (window.innerHeight >> 1) - y * zoom,
+        zoom
       });
   
       SceneObject.focus(gameObject);

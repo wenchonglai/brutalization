@@ -4,25 +4,13 @@ import EasyDOM from "../util/easy-dom.js";
 import VirtualDOM from "../util/virtual-dom.js";
 
 export default class UI extends VirtualDOM{
-  constructor(){
+  constructor(game){
     super("div", {className: "ui"});
 
     this._informationPanel = new InformationPanel();
     this._commandsPanel = new CommandsPanel({game});
-
-    this.append(this.informationPanel, this.commandsPanel);
-      // _("div", {className: "commands-end-turn-wrapper"}, 
-      //   _("div", {className: "commands"},
-      //     // Object.keys(commands).map(key => _(IconButton, {
-      //     //   id: key, selected: _selectedIndex === key,
-      //     //   data: commands[key], res,
-      //     //   onClick: e => {_setSelectedIndex(key);}
-      //     // })),
-      //   ),
-      //   _("a", {className: "end-turn"}, "End Turn")
-      // )
-    
     this._resolveFunctions = new Map();
+    this.append(this.informationPanel, this.commandsPanel);
   }
 
   get informationPanel(){ return this._informationPanel; }
@@ -31,10 +19,15 @@ export default class UI extends VirtualDOM{
 
   handleResolve(){
     const gameObject = this.gameObject;
-    const player = gameObject.player;
-    const game = player.game;
+    const player = gameObject?.player;
+    const game = player?.game;
     const resolve = this._resolveFunctions.get(gameObject);
     const unresolved = player?._unresolved;
+
+    if (!gameObject){
+      resolve?.();
+      return;
+    }
 
     if (gameObject.tasked){
       resolve?.();
@@ -55,78 +48,28 @@ export default class UI extends VirtualDOM{
     if (resolve) this._resolveFunctions.set(gameObject, resolve);
     this.update(gameObject);
   }
+
   update(gameObject){
     this._gameObject = gameObject;
+    
+    if (gameObject) this._player = gameObject.player;
+    
+    this._endable = !this._player._unresolved?.size;
 
     let { information, commands } = gameObject?.toUserInterface() || {};
 
     this.informationPanel.update(information);
+console.log(gameObject)
     this.commandsPanel.update({
       commands, 
       selectedIndex: gameObject?.actionQueue[0]?.type,
-      handleResolve: this.handleResolve.bind(this)
+      handleResolve: this.handleResolve.bind(this),
+      endable: this._endable
     });
     
-    // EasyDOM.unmount(this._dom, document.getElementById('game'));
-    // this._dom = new UIComponent({
-    //   gameObject, 
-    //   res: this._resolveFunctions.get(gameObject),
-    // });
     EasyDOM.render(this, document.getElementById('game'));
   }
 }
-
-// function UIComponent(props = {}){
-//   this.props = props;
-
-//   const { gameObject, res } = props;
-//   const { information, commands } = gameObject.toUserInterface();
-//   const [_selectedIndex, _setSelectedIndex] = useState.call(this);
-
-//   return (
-//     _("div", {className: "ui", context: this},
-//       _(InformationPanel, {className: "info", data: information}),
-//       _("div", {className: "commands-end-turn-wrapper"}, 
-//         _("div", {className: "commands"},
-//           Object.keys(commands).map(key => _(IconButton, {
-//             id: key, selected: _selectedIndex === key,
-//             data: commands[key], res,
-//             onClick: e => {_setSelectedIndex(key);}
-//           })),
-//         ),
-
-//         _("a", {className: "end-turn"}, "End Turn")
-//       )
-//     )
-//   );
-// }
-
-// class UIComponent extends VirtualDOM{
-//   constructor({game, gameObject, res} = {}){
-    
-//     super("div", {className: "ui"},
-//       _(InformationPanel, {className: "info", data: information}),
-//       _("div", {className: "commands-end-turn-wrapper"}, 
-//         _("div", {className: "commands"},
-//           // Object.keys(commands).map(key => _(IconButton, {
-//           //   id: key, selected: _selectedIndex === key,
-//           //   data: commands[key], res,
-//           //   onClick: e => {_setSelectedIndex(key);}
-//           // })),
-//         ),
-
-//         _("a", {
-//             className: "end-turn",
-//             onClick: e => {game.finishTurn(); }
-//           }, 
-//           "End Turn"
-//         )
-//       )
-//     );
-
-    
-//   }
-// }
 
 class InformationPanel extends VirtualDOM{
   constructor({data} = {}){
@@ -157,11 +100,12 @@ class CommandsPanel extends VirtualDOM{
   constructor({game}){
     super("div", {className: "commands-end-turn-wrapper"});
 
+    this._game = game;
     this._commands = _("div", {className: "commands"});
     this._endTurnButton = _("a", {
       className: "end-turn",
       onClick: (e) => {
-        game.nextTurn();
+        game.endTurn();
       }
     }, "End Turn");
     this.append(this.commands, this.endTurnButton);
@@ -172,7 +116,10 @@ class CommandsPanel extends VirtualDOM{
   get commands(){ return this._commands; }
   get endTurnButton(){ return this._endTurnButton; }
   
-  update({commands, handleResolve, selectedIndex = false}, preserveSelectedIndex = false){
+  update({commands, handleResolve, selectedIndex = false, endable}, 
+    preserveSelectedIndex = false
+  ){
+
     this.commands.innerHTML = "";
 
     if (!preserveSelectedIndex)
@@ -192,10 +139,12 @@ class CommandsPanel extends VirtualDOM{
       });
 
       this.commands.appendChild(childNode);
-    })
+    });
+
+    this[endable ? "addClass" : "removeClass"]("endable");
+    this.commands.classList[commands ? "remove" : "add"]("inactive");
   }
 }
-
 
 function IconButton({id, command, selected, handleClick, handleResolve, moveable}){
   const text = id.capitalize();
@@ -209,8 +158,9 @@ function IconButton({id, command, selected, handleClick, handleResolve, moveable
         }`, 
         onClick: moveable ? (e) => {
           handleClick();
-          command();
-          handleResolve();
+
+          const {skipResolve} = command() || {};
+          skipResolve || handleResolve();
         } : null
       },
       _("a", { 

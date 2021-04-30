@@ -1,9 +1,7 @@
-export class Improvement{
-  constructor({tile}){
-    this._tile = tile;
-  }
+import MetaGameObject from "../meta-game-object.js";
 
-  get tile(){ return this._tile; }
-  get x(){ return this.tile.x; }
-  get y(){ return this.tile.y; }
+export class Improvement extends MetaGameObject{
+  constructor({player, tile, state}){
+    super({player, tile, state})
+  }
 }

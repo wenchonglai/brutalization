@@ -1,9 +1,8 @@
 const ROT_X = 60;
 const ROT_Z = 40;
-const COS = Math.cos(Math.PI * 2 / 9);
-const SIN = Math.sin(Math.PI * 2 / 9);
-const COS_X = Math.cos(Math.PI / 3);
 const GRID_SIZE = 64;
+
+import {COS_X, COS, SIN} from "../settings/map-settings.js"
 
 export const mapToScreen = ({x, y}, {translateX = 0, translateY = 0, zoom = 1} = {}) => {
   return {

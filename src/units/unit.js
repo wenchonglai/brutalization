@@ -1,18 +1,9 @@
-import Tile from "../tiles/tile.js";
-import {City} from "../tiles/settlement.js";
 import approximate from "../util/approximate.js";
+import MetaGameObject from "../meta-game-object.js";
 
-export class Unit{
+export class Unit extends MetaGameObject{
   constructor({player, tile, population = 0, experience = 0, formation = [0, 0]} = {}){
-
-    this._homeTile = tile;
-    this._actionQueue = [];
-
-    this._originalState = Object.freeze({
-      tile, population
-    });
-    
-    this._state = {
+    super({player, tile, state: {
       population, 
       experience,
       campTile: tile,
@@ -22,27 +13,29 @@ export class Unit{
       formation,
       movePoints: 0,
       pathToClosestHomeCity: []
-    };
+    }});
 
-    this.register({player, tile});
+    this._originalState = Object.freeze({
+      tile, population
+    });
+
+    this._homeTile = tile;
   }
-  register({player, tile}){
-    tile?.register(this);
-    player?.register(this);
+
+  destruct(){
+    this.homeTile.population += this.population;
+    this.tile.food += this.totalFoodLoad;
+    MetaGameObject.prototype.deregister();
   }
+
+  deregister(){
+    this.player._unresolved.delete(this);
+    MetaGameObject.prototype.deregister();
+  }
+  
   get originalState(){ return this._originalState; }
-  get state(){ return this._state; }
-  set state(newState){ return this._state = newState; }
-  get tile(){ return this._tile; }
   get homeTile(){ return this.originalState.tile; }
   get campTile(){ return this.state.campTile; }
-  get player(){ return this._player; }
-  get playerId(){ return this._player?.id; }
-  get game(){ return this.player.game; }
-  get x(){ return this.tile.x; }
-  get y(){ return this.tile.y; }
-  get actionQueue(){ return this._actionQueue; }
-  get action(){ return this.actionQueue[0]; }
   get population(){ return this.state.population; }
   get experience(){ return this.state.experience; }
   get pandemicStage(){ return this.state.pandemicStage; }
@@ -52,7 +45,9 @@ export class Unit{
   get movePoints(){ return this.state.movePoints; }
   get nextCommand(){ return this.state.nextCommand; }
   get moveable(){ return this.movePoints >= 0; }
-  get tasked(){ return !this.moveable || this.actionQueue.length > 0; }
+  get tasked(){ 
+    return !this.moveable || this.actionQueue.length > 0 || !!this.nextCommand
+  }
   get overallWearinessLevel(){
     return 1 + Math.max(0, this.tiredNessLevel - 1) + Math.max(0, this.hungerLevel - 1) + Math.max(0, this.pandemicStage - 1) ** 0.5 / 4;
   }
@@ -71,6 +66,7 @@ export class Unit{
         stamina: approximate(this.staminaLevel, {isPercentage: true}),
         morality: approximate(this.morality),
         pandemic: approximate(this.pandemicStage),
+        movePoints: this.movePoints,
         formation: this.formation
       },
       commands: {
@@ -81,14 +77,19 @@ export class Unit{
             gameObject: this, 
             command: (...args) => this.march.call(this, ...args)
           });
+
+          return {skipResolve: true};
         }),
         raid: moveable && (() => {
           this.game.changeMapInteraction('raid', {
             gameObject: this, 
             command: (...args) => this.raid.call(this, ...args)
           });
+
+          return {skipResolve: true};
         }),
         pillage: moveable && this.pillage.bind(this),
+        disband: moveable && this.destruct.bind(this)
       }
     }
   }
@@ -184,6 +185,7 @@ export class Unit{
   // state and action reducer
   actionReducer(action){
     Object.freeze(this.state);
+
     const newState = {...this.state};
     const foodConsumption = Math.min(newState.population, newState.totalFoodLoad);
     const isPandemic = Math.random() <= this.calculatePandemicPossibility();
@@ -268,25 +270,14 @@ export class Unit{
     }
   }
 
-  saveAction(action){ 
-    if (action)
-      this._actionQueue[0] = action;
-  }
-  dispatch(action){
-    if (!action) return;
-
-    this.state = this.actionReducer(action);
-    this.player.update(this);
-  }
   endTurn(){
-    if (this.state.movePoints >= 0){
+    if (this.movePoints >= 0){
       this.dispatch(this.actionQueue.shift());
+      let {type, cancelCondition, ...args} = this.nextCommand || {};
+      this[type]?.(...Object.values(args));
     }
     
-    let {type, cancelCondition, ...args} = this.nextCommand || {};
-    this[type]?.(...Object.values(args));
-
-    this.state.movePoints = Math.min(0, this.state.movePoints + 2);
+    this.state.movePoints = Math.min(1, this.movePoints + 2);
   }
 
   /* User commands */
@@ -339,7 +330,7 @@ export class Unit{
       this.dispatch({ type: 'march', targetTile,
         costDistance,
         pathToClosestHomeCity: this.calculatePathToClosestHomeCity(),
-        formation: targetTile !== destinationTile ? [undefined, undefined] : formation,
+        formation,
         nextCommand: { type: 'march', destinationTile, formation }
       });
     }

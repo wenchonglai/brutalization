@@ -5,6 +5,8 @@ export default class VirtualDOM{
     this._dom = createComponent(tagname, props, ...children);
   }
 
+  get parentNode(){ return this._dom.parentNode; }
+
   append(...components){
     for (let component of components){
       this._dom.appendChild(
@@ -105,4 +107,5 @@ export class VirtualCanvas extends VirtualDOM{
   createImageData(...args){ return this.ctx.createImageData(...args); }
   getImageData(...args){ return this.ctx.getImageData(...args); }
   putImageData(...args){ return this.ctx.putImageData(...args); }
+  drawImage(...args){ return this.ctx.drawImage(...args); }
 }
