@@ -42,45 +42,38 @@ export default class Player{
       .filter(unit => unit.actionQueue.length === 0);
   }
   
-  makeActive(){
+  activate(){
     this._isTurn = true;
 
-    this.promptAction(this.findIdleUnits());
+    return this.promptAction(this.findIdleUnits());
   }
 
-  async promptAction(idleUnits){
- 
-    for (let unit of idleUnits)
-      await new Promise(resolve => {
-
-        if (unit.movePoints < 0) resolve()
-        else this.focus(unit, resolve);
-      });
-  }
-
-  async finishTurn(){
-    let idleUnits = this.findIdleUnits();
-
-    while (idleUnits.length > 0){
-      await this.promptAction(idleUnits);
-
-      idleUnits = this.findIdleUnits();
-    }
-
-    this._isTurn = false;
-    this.game.nextTurn();
+  deactivate(){
+    this.focus();
   }
   
   focus(gameObject, res){
     this._selected = gameObject;
-    this.viewport.x = gameObject.x;
-    this.viewport.y = gameObject.y;
+
+    if (gameObject){
+      this.viewport.x = gameObject.x;
+      this.viewport.y = gameObject.y;
+    }
     //rerender using object and viewport info
+
+    // this.game.update(gameObject);
   }
 
   update(gameObject){
     this.game.update(gameObject);
   }
   
+  endTurn(){
+    this._isTurn = false;
+    for (let unit of this.units){
+      unit.endTurn();
+    }
+    this.deactivate();
+  }
 }
 

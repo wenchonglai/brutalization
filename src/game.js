@@ -19,7 +19,10 @@ export default class Game{
     this._mapSize = mapSize;
     this.ui = new UI();
     this.renderer = new Renderer({game: this});
-    document.getElementById('game').appendChild(this.renderer._dom);
+    this._dom = document.getElementById('game');
+
+    this.renderer.attachTo(this._dom);
+    this.ui.attachTo(this._dom);
 
     for (let id = 0; id < numberOfPlayers; id ++)
       this.players[id] = new (id ? AIPlayer : HumanPlayer)({
@@ -27,16 +30,16 @@ export default class Game{
         color: PLAYER_COLORS[id]
       });
 
-    this.#_initialize();
+    this._initialize();
   }
 
   destruct(){
     for (let player of this.players)
       player.destruct();
 
-    for (let i = 0; i < this.mapSize; i++)
-      for (let j = 0; j < this.mapSize; j++){
-        let tile = Tile.getTile([i, j]);
+    for (let x = 0; x < this.mapSize; x++)
+      for (let y = 0; y < this.mapSize; y++){
+        let tile = Tile.getTile({x, y});
         tile.destruct();
       }
   }
@@ -47,65 +50,77 @@ export default class Game{
   get currentPlayer(){ return this.players[this.currentPlayerId]; }
   get mapSize(){ return this._mapSize; }
 
-  #_initialize(){
+  _initialize(){
     // generate map
-    for (let i = 0; i < this.mapSize; i++)
-      for (let j = 0; j < this.mapSize; j++)
-        new Tile([i, j]);
+    for (let x = 0; x < this.mapSize; x++)
+      for (let y = 0; y < this.mapSize; y++)
+        new Tile({x, y});
     
     new Unit({
-      player: this.currentPlayer, tile: Tile.getTile([1, 1]),
-      population: 2500
+      player: this.currentPlayer, tile: Tile.getTile({x: 0, y: 0}),
+      population: 2500,
+      formation: [1, 1]
     });
 
     new Unit({
-      player: this.currentPlayer, tile: Tile.getTile([3, 5]),
-      population: 5000
+      player: this.currentPlayer, tile: Tile.getTile({x: 3, y: 5}),
+      population: 5000,
+      formation: [1, 0]
     });
 
     new Unit({
-      player: this.currentPlayer, tile: Tile.getTile([2, 0]),
+      player: this.currentPlayer, tile: Tile.getTile({x: 2, y: 0}),
       population: 12500
     });
 
     new Unit({
-      player: this.players[1], tile: Tile.getTile([2, 2]),
-      population: 2500
+      player: this.players[1], tile: Tile.getTile({x: 11, y: 1}),
+      population: 5000,
+      formation: [-1, -1]
     });
 
     new Unit({
-      player: this.players[1], tile: Tile.getTile([5, 5]),
-      population: 5000
+      player: this.players[1], tile: Tile.getTile({x: 4, y: 5}),
+      population: 3500,
+      formation: [1, 0]
     });
 
     new Unit({
-      player: this.players[1], tile: Tile.getTile([3, 0]),
+      player: this.players[1], tile: Tile.getTile({x: 3, y: 0}),
       population: 12500
     });
-    
+
     // generate player home location
 
   }
 
   start(){
-    this.currentPlayer.makeActive();
+    this.currentPlayer.activate()
+      .then(res => {
+        this.nextTurn();
+      });
   }
 
   nextTurn(){
-    this.currentPlayerId = (this.currentPlayerId + 1) / this.numberOfPlayers;
-    return this.currentPlayer.makeActive();
+    this.currentPlayer.endTurn();
+    this._currentPlayerId = (this.currentPlayerId + 1) % this.numberOfPlayers;
+    this.start();
   }
 
   focus(gameObject, res){
-    this.ui.render(gameObject, res);
+    this.ui.focus(gameObject, res);
     this.renderer.focus(gameObject);
   }
 
   update(gameObject){
-    this.ui.update(gameObject);
-    // this.renderer.update(gameObject);
+    gameObject.player instanceof HumanPlayer ?? this.ui.update(gameObject);
+    this.renderer.update(gameObject);
   };
 
   addToScene(gameObject){ this.renderer.addToScene(gameObject); }
   removeFromScene(gameObject){ this.renderer.removeFromScene(gameObject); }
+
+  changeMapInteraction(type, {gameObject, command}){
+    this.renderer.changeMapInteraction(type, {gameObject, command})
+  }
 }

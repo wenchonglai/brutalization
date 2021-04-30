@@ -17,16 +17,16 @@ const TERRAINS = [
 
 export default class Tile {
   static tiles = {};
-  static setTile([x, y], tile){
+  static setTile({x, y}, tile){
     if (Tile.tiles[x] === undefined) Tile.tiles[x] = {};
     Tile.tiles[x][y] = tile;
   }
-  static getTile([x, y]){
+  static getTile({x, y}){
     if (!Tile.tiles[x]) return undefined;
     return Tile.tiles[x][y];
   }
 
-  constructor([x, y], {
+  constructor({x, y}, {
     terrain = 4,
     population = {rural: 500, urban: 0, drafted: 0}
   } = {}){
@@ -43,11 +43,11 @@ export default class Tile {
     this._trainLevel = 0;
     this._attitudes = {};
 
-    Tile.setTile([x, y], this);
+    Tile.setTile({x, y}, this);
   }
 
   destruct(){
-    Tile.setTile([this.x, this.y], null);
+    Tile.setTile(this, null);
     
     for (let improvement of this.improvements)
       improvement?.destruct();
@@ -66,9 +66,23 @@ export default class Tile {
   get improvements(){ return this._improvements; }
   get settlements(){ return this._settlements; }
   get units(){ return this._units; }
+  get hasUnit(){ return this.units.size > 0; }
+
+  hasEnemy(gameObject){
+    return Array.from(this.units).some(unit => unit.player !== gameObject.player);
+  }
+
+  getEnemy(gameObject){
+    for (let unit of Array.from(this.units)){
+      if (unit.player !== gameObject.player)
+        return unit;
+    }
+  }
 
   getDistance(tile){
-    return tile ? ( (this.x - tile.x) ** 2 + (this.y - tile.y) ** 2 ) ** 0.5 : Infinity;
+    return tile ? 
+      (( (this.x - tile.x) ** 2 + (this.y - tile.y) ** 2 ) ** 0.5).toFixed(4) : 
+      Infinity;
   }
 
   getCostDistance(tile){
@@ -105,8 +119,8 @@ export default class Tile {
 
     for (let i = -1; i <= 1; i ++)
       for (let j = -1; j <= 1; j ++)
-        if (i !== this.x || j !== this.y){
-          let tile = Tile.getTile([this.x + i, this.y + j]);
+        if (i !== 0 || j !== 0){
+          let tile = Tile.getTile({x: this.x + i, y: this.y + j});
           if (tile) tiles.push(tile);
         }
         
@@ -117,7 +131,7 @@ export default class Tile {
   rangeAssign(range, assignFunction){
     for (let i = -range, tile; i <= range; i += 1)
       for (let j = -range; j <= range; j += 1){
-        let tile = Tile.getTile([this.x + i, this.y + j]);
+        let tile = Tile.getTile({x: this.x + i, y: this.y + j});
         tile && assignFunction.call(tile, this.getDistance(tile));
       }
   }
@@ -132,20 +146,21 @@ export default class Tile {
     return bfs.call(this, findFunc, pathFunc, {maxDistance});
   }
 
-  register(object){
-    object._tile = this;
+  register(gameObject){
+    gameObject.tile?.deregister(gameObject);
+    gameObject._tile = this;
     
-    if (object instanceof Unit) this.units.add(object)
-    else if (object instanceof Settlement) this.settlements.add(object)
-    else if (object instanceof Improvement) this.improvements.add(object);
+    if (gameObject instanceof Unit) this.units.add(gameObject)
+    else if (gameObject instanceof Settlement) this.settlements.add(gameObject)
+    else if (gameObject instanceof Improvement) this.improvements.add(gameObject);
   }
 
-  deregister(object){
-    object._tile = undefined;
+  deregister(gameObject){
+    gameObject._tile = undefined;
     
-    if (object instanceof Unit) this.units.delete(object)
-    else if (object instanceof Settlement) this.settlements.delete(object)
-    else if (object instanceof Improvement) this.improvements.delete(object);
+    if (gameObject instanceof Unit) this.units.delete(gameObject)
+    else if (gameObject instanceof Settlement) this.settlements.delete(gameObject)
+    else if (gameObject instanceof Improvement) this.improvements.delete(gameObject);
   }
 
   /* User-related */

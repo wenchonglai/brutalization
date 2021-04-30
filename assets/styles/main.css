@@ -131,6 +131,11 @@ a {
   color: #ffdf00;
 }
 
+.ui .commands > div.button.command-button.inactive {
+  background: radial-gradient(#574f47, #776f57);
+  color: #9f9f9f;
+}
+
 .ui a.end-turn {
   display: flex;
   width: max-content;
@@ -158,6 +163,7 @@ div.unit-indicator{
   box-sizing: border-box;
   border: 2px solid #bfbfbf;
   box-shadow: 1px 1px 0 0 #000000;
+  opacity: 0.8;
 }
 
 div.unit-indicator::after{
@@ -205,6 +211,7 @@ div.unit-indicator.active, div.unit-indicator.active::before{
 
 div.unit-indicator.active {
   transform: translate(-50%, -50px);
+  opacity: 1;
 }
 
 div.unit-indicator.active::after{

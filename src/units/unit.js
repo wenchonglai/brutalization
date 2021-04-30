@@ -3,7 +3,7 @@ import {City} from "../tiles/settlement.js";
 import approximate from "../util/approximate.js";
 
 export class Unit{
-  constructor({player, tile, population = 0, experience = 0} = {}){
+  constructor({player, tile, population = 0, experience = 0, formation = [0, 0]} = {}){
 
     this._homeTile = tile;
     this._actionQueue = [];
@@ -17,8 +17,9 @@ export class Unit{
       experience,
       campTile: tile,
       tiredNessLevel: 0, 
-      totalHunger: 0, totalFoodLoad: 0, morality: 0, pandemicStage: 0,
-      formation: [0, 0],
+      totalHunger: 0, totalFoodLoad: population * 5, 
+      morality: 0, pandemicStage: 0,
+      formation,
       movePoints: 0,
       pathToClosestHomeCity: []
     };
@@ -37,6 +38,7 @@ export class Unit{
   get campTile(){ return this.state.campTile; }
   get player(){ return this._player; }
   get playerId(){ return this._player?.id; }
+  get game(){ return this.player.game; }
   get x(){ return this.tile.x; }
   get y(){ return this.tile.y; }
   get actionQueue(){ return this._actionQueue; }
@@ -47,6 +49,10 @@ export class Unit{
   get tiredNessLevel(){ return this.state.tiredNessLevel; }
   get hungerLevel(){ return this.state.totalHunger / this.state.population; }
   get morality(){ return this.state.morality; }
+  get movePoints(){ return this.state.movePoints; }
+  get nextCommand(){ return this.state.nextCommand; }
+  get moveable(){ return this.movePoints >= 0; }
+  get tasked(){ return !this.moveable || this.actionQueue.length > 0; }
   get overallWearinessLevel(){
     return 1 + Math.max(0, this.tiredNessLevel - 1) + Math.max(0, this.hungerLevel - 1) + Math.max(0, this.pandemicStage - 1) ** 0.5 / 4;
   }
@@ -55,22 +61,34 @@ export class Unit{
   
   // user interaction
   toUserInterface(){
+    const moveable = this.movePoints >= 0;
+
     return {
       information: {
-        population: approximate(this.population),
+        population: approximate(this.population, {scales: [1]}),
         experience: approximate(this.experience),
         hunger: approximate(this.hungerLevel),
-        stamina: approximate(this.staminaLevel),
+        stamina: approximate(this.staminaLevel, {isPercentage: true}),
         morality: approximate(this.morality),
         pandemic: approximate(this.pandemicStage),
         formation: this.formation
       },
       commands: {
-        rest: this.rest.bind(this),
-        guard: this.guard.bind(this),
-        march: this.march.bind(this),
-        raid: this.raid.bind(this),
-        pillage: this.pillage.bind(this),
+        rest: moveable && this.rest.bind(this),
+        guard: moveable && this.guard.bind(this),
+        march: moveable && (() => {
+          this.game.changeMapInteraction('march', {
+            gameObject: this, 
+            command: (...args) => this.march.call(this, ...args)
+          });
+        }),
+        raid: moveable && (() => {
+          this.game.changeMapInteraction('raid', {
+            gameObject: this, 
+            command: (...args) => this.raid.call(this, ...args)
+          });
+        }),
+        pillage: moveable && this.pillage.bind(this),
       }
     }
   }
@@ -80,14 +98,15 @@ export class Unit{
     const dx = this.x - this.homeTile.x;
     const dy = this.y - this.homeTile.y;
 
-    return ((1 + ( dx ** 2 ) * 0.5 + dy ** 2 ) ** 0.5 / 32 ) * (this.overallWearinessLevel ** 0.5);
+    return ((1 + ( dx ** 2 ) * 0.5 + dy ** 2 ) ** 0.5 / 32 ) * 
+      (this.overallWearinessLevel ** 0.5);
   }
 
   calculatePathToClosestHomeCity(){
     return this.tile.bfs(
       tile => tile.city && tile.city.totalFoodStorage > 0,
       tile => 
-        !tile.hasUnit() && 
+        !tile.hasUnit && 
         tile.playerId === this.playerId
     );
   }
@@ -95,11 +114,71 @@ export class Unit{
     return Math.min(1.25 ** (this.morality * 0.8), 1.25);
   }
   calculateMilitaryMight(){
-    console.log(this.population, this.staminaLevel, this.experience)
-    return this.population * this.staminaLevel * this.calculateMoralityBonus() * (this.experience ** 0.5);
+    return (this.population ** 0.5) * 
+      this.staminaLevel * 
+      this.calculateMoralityBonus() * 
+      ((1 + this.experience) ** 0.5);
   }
   calculateTolerableCasualtyRate(){
-    return (this.experience ** 0.5) * this.calculateMoralityBonus() / 100;
+    return ((1 + this.experience) ** 0.5) * this.calculateMoralityBonus() / 64;
+  }
+  _calculatechargeTime(formation1, formation2, attackMode = false){
+    const isDenselyFormed1 = formation1.every(el => el === 0);
+    const isDenselyFormed2 = formation2.every(el => el === 0);
+    
+    if (isDenselyFormed1 && isDenselyFormed2) return 0;
+    if (isDenselyFormed1 || isDenselyFormed2) return 0.5;
+
+    let time = 0;
+    const angle1 = Math.atan2(...formation1);
+    const angle2 = Math.atan2(...formation2);
+    const deltaAngle = Math.min(
+      Math.abs(angle1 - angle2), 
+      Math.PI * 2 - Math.abs(angle1 - angle2)
+    );
+
+    if (!attackMode){
+      if (angle1 * angle2 < 0) time += 0.25
+      time += Math.abs(Math.abs(angle1) - Math.abs(angle2)) * 2 / Math.PI;
+    } else {
+      time += Math.abs(deltaAngle) * 2 / Math.PI;
+    }
+
+    return time;
+  }
+  _calculateFormationBonus(
+    originalFormation, chargeFormation, newFormation, enemyFormation
+  ){
+    const chargeTime = 
+      this._calculatechargeTime(originalFormation, chargeFormation) +
+      this._calculatechargeTime(chargeFormation, newFormation, true);
+    const isDenselyFormed = newFormation.every(el => el === 0);
+    const enemyIsDenselyFormed = enemyFormation.every(el => el === 0);
+    const attackAngle = Math.atan2(...(
+      isDenselyFormed ? chargeFormation : newFormation
+    ));
+    const defenseAngle = enemyIsDenselyFormed ? undefined :
+      Math.atan2(...enemyFormation.map(x => -x));
+    const deltaAngle = Math.min(
+      Math.abs(attackAngle - defenseAngle), 
+      Math.PI * 2 - Math.abs(attackAngle - defenseAngle)
+    );
+// console.log(chargeTime, isDenselyFormed, enemyIsDenselyFormed, attackAngle, defenseAngle)
+    return (
+      (isDenselyFormed ? 1.5 : 2) *
+      (enemyIsDenselyFormed ? 0 : deltaAngle ** 0.5) / 
+        (1 + chargeTime) -
+      (isDenselyFormed ? 0.5 : 1) *
+        chargeTime * (enemyIsDenselyFormed ? 0.5 : 1)
+    );
+  }
+  calculateFormationBonus(enemy, formation, targetTile){
+    return this._calculateFormationBonus(
+      this.formation,
+      this.getFormationWhileMoving(targetTile),
+      formation,
+      enemy.formation
+    );
   }
 
   // state and action reducer
@@ -107,7 +186,7 @@ export class Unit{
     Object.freeze(this.state);
     const newState = {...this.state};
     const foodConsumption = Math.min(newState.population, newState.totalFoodLoad);
-    const isPandemic = Math.random() >= this.calculatePandemicPossibility();
+    const isPandemic = Math.random() <= this.calculatePandemicPossibility();
 
     newState.totalHunger += newState.population - foodConsumption;
     newState.totalFoodLoad -= foodConsumption;
@@ -117,6 +196,7 @@ export class Unit{
       Math.min(newState.tiredNessLevel / 2 - 1, 0) + 
       newState.pandemicStage
     ) / 25 | 0;
+    newState.nextCommand = action.nextCommand;
 
     switch (action.type){
       case 'rest': {
@@ -131,11 +211,14 @@ export class Unit{
         return {...newState, formation: action.formation};
       }
       case 'march': {
+        this.register({tile: action.targetTile});
+        
+        newState.movePoints -= action.costDistance;
         newState.tiredNessLevel += 0.125 * action.costDistance;
         newState.experience += Math.random() * action.costDistance/ 4;
 
         if (newState.tiredNessLevel > 1)
-          newState.morality -= 0.125 * action.costDistance * overallWearinessLevel;
+          newState.morality -= 0.125 * action.costDistance * this.overallWearinessLevel;
 
         return {
           ...newState, 
@@ -146,19 +229,32 @@ export class Unit{
       case 'pillage': {
         newState.movePoints -= 2;
         newState.tiredNessLevel += 0.125;
-        newState.morality += 1;
-        newState.population -= action.casualty;
+
+        if (action.casualty){
+          newState.tiredNessLevel += 0.125;
+          newState.population -= action.casualty;
+        }
+        else newState.morality = Math.min(newState.morality + 1, 0);
+        
         newState.totalFoodLoad += action.yield;
+
         return newState;
       }
       case 'raid': {
-        newState.tiredNessLevel += 0.25;
-        newState.morality -= 0.25 * overallWearinessLevel;
-        newState.experience += Math.random() / 2;
+        this.register({tile: action.targetTile});
+
+        newState.movePoints -= action.costDistance;
+        newState.tiredNessLevel += 0.25 * action.costDistance;
+        newState.morality -= 0.25 * this.overallWearinessLevel;
+        newState.experience += Math.random() * action.costDistance / 2;
+
+        if (newState.tiredNessLevel > 1)
+          newState.morality -= 0.25 * action.costDistance * this.overallWearinessLevel;
+
         return newState;
       }
       case 'battle': {
-        newState.movePoints -= 2;
+        newState.movePoints -= action.movePoints ?? 2;
         newState.tiredNessLevel += 1;
         newState.morality += action.morality;
         newState.population -= action.casualty;
@@ -177,13 +273,19 @@ export class Unit{
       this._actionQueue[0] = action;
   }
   dispatch(action){
+    if (!action) return;
+
     this.state = this.actionReducer(action);
     this.player.update(this);
   }
   endTurn(){
     if (this.state.movePoints >= 0){
-      dispatchAction(this.actionQueue.shift());
+      this.dispatch(this.actionQueue.shift());
     }
+    
+    let {type, cancelCondition, ...args} = this.nextCommand || {};
+    this[type]?.(...Object.values(args));
+
     this.state.movePoints = Math.min(0, this.state.movePoints + 2);
   }
 
@@ -212,18 +314,29 @@ export class Unit{
   }
 
   march(destinationTile, formation, path){
-    if (destinationTile === this.tile) return;
+    if (destinationTile === this.tile) {
+      this.dispatch({ type: 'march', 
+        targetTile: destinationTile,
+        costDistance: 1,
+        pathToClosestHomeCity: this.calculatePathToClosestHomeCity(),
+        formation: formation,
+      });
 
-    path ||= this.tile.aStarSearch(destinationTile);
+      return;
+    };
+
+    path ||= this.tile.aStarSearch(destinationTile, tile => !tile.hasUnit);
+
+    if (!path) return;
 
     const targetTile = path[1];
-    
-    if (targetTile.hasUnit()){
+
+    if (targetTile.hasUnit){
       
     } else {
-      costDistance = this.tile.getCostDistance(targetTile);
+      let costDistance = this.tile.getCostDistance(targetTile);
 
-      this.saveAction({ type: 'march', targetTile,
+      this.dispatch({ type: 'march', targetTile,
         costDistance,
         pathToClosestHomeCity: this.calculatePathToClosestHomeCity(),
         formation: targetTile !== destinationTile ? [undefined, undefined] : formation,
@@ -248,52 +361,115 @@ export class Unit{
 
     this.dispatch({
       type: 'pillage', 
-      casualty
+      casualty,
+      yield: 0
     });
-
-    console.log(this, isAttacked, casualty);
   }
 
-  raid(destinationTile, formation){
-    const targetTile = Tile.getPath(this.tile, destinationTile)[1];
-    let enemy = targetTile.getEnemy();
+  raid(destinationTile, formation, path){
+    if (destinationTile === this.tile) return;
+
+    path ||= this.tile.aStarSearch(
+      destinationTile,
+      tile => !tile.hasUnit ||
+        tile === destinationTile && tile.hasEnemy(this)
+    );
+
+    const targetTile = path[1];
+
+    let enemy = targetTile.getEnemy(this);
 
     if (targetTile === destinationTile && enemy){
-      const formationBonus = this.calculateFormationBonus(
-        [targetTile.x - this.x, targetTile.y - this.y], 
-        enemy.formation
-      );
-
-      const militaryMight1 = this.calculateMilitaryMight() * formationBonus * ( Math.random() * 1 + 1 ) / 1.5;
-      const militaryMight2 = enemy.calculateMilitaryMight() * ( Math.random() * 1 + 1 ) / 1.5;
-      
-      const tolerableCasualty1 = this.calculateTolerableCasualtyRate() * this.population;
-      const tolerableCasualty2 = enemy.calculateTolerableCasualtyRate() * enemy.population;
+      const formationBonus = 
+        this.calculateFormationBonus(enemy, formation, targetTile);
+      const militaryMight1 = 
+        this.calculateMilitaryMight() * 
+        (1 + Math.min(formationBonus, 0)) * 
+        ( Math.random() * 1 + 1 ) / 1.5;
+      const militaryMight2 = 
+        enemy.calculateMilitaryMight() * 
+        (1 + Math.max(-formationBonus, 0)) *
+        ( Math.random() * 1 + 1 ) / 1.5;
+      const tolerableCasualty1 = 
+        this.calculateTolerableCasualtyRate() * this.population * ((Math.random() + 2) / 2.5);
+      const tolerableCasualty2 = 
+        enemy.calculateTolerableCasualtyRate() * enemy.population * ((Math.random() + 2) / 2.5);
 
       let casualty1, casualty2, moralityDelta = 1;
 
       if (tolerableCasualty1 / militaryMight2 > tolerableCasualty2 / militaryMight1 ){
-        casualty1 = tolerableCasualty1;
-        casualty2 = tolerableCasualty1 * militaryMight1 / militaryMight2;
+        casualty1 = tolerableCasualty1 | 0;
+        casualty2 = tolerableCasualty1 * militaryMight1 / militaryMight2 | 0;
         
       } else {
-        casualty2 = tolerableCasualty2;
-        casualty1 = tolerableCasualty2 * militaryMight2 / militaryMight1;
+        casualty2 = tolerableCasualty2 | 0;
+        casualty1 = tolerableCasualty2 * militaryMight2 / militaryMight1 | 0;
         moralityDelta = -1;
       }
 
       moralityDelta *= 3 * Math.abs(casualty1 - casualty2) / (casualty1 + casualty2);
 
-      this.saveAction({type: 'battle', casualty: casualty1, morality: moralityDelta - 0.25});
-      enemy.saveAction({type: 'battle', casualty: casualty2, morality: -moralityDelta - 0.25});
+      this.dispatch({type: 'battle', casualty: casualty1, morality: moralityDelta - 0.25});
+      enemy.dispatch({type: 'battle', movePoints: 0, casualty: casualty2, morality: -moralityDelta - 0.25});
     } else {
-      this.saveAction({
-        type: 'raid', 
+      let costDistance = this.tile.getCostDistance(targetTile);
+
+      this.dispatch({ type: 'raid',
         targetTile,
-        formation: targetTile !== destinationTile ? 
-          getFormation(targetTile, this.tile) : formation,
+        costDistance,
+        formation: targetTile !== destinationTile ? [undefined, undefined] : formation,
+        pathToClosestHomeCity: this.calculatePathToClosestHomeCity(),
         nextCommand: { type: 'raid', destinationTile, formation }
       });
     }
   }
+
+  getFormationWhileMoving(targetTile){
+    return [targetTile.x - this.x, targetTile.y - this.y];
+  }
 } 
+
+// [ 
+//   [ 0, 0, 0, 0 ],
+//   [ 0, 0, 0, 1 ],
+//   [ 0, 1, 0, 0 ],
+//   [ 0, 1, 1, 0 ],
+//   [ 0, 1, 2, 0 ],
+//   [ 0, 1, 4, 0 ],
+//   [ 0, 1, 0, 1 ],
+//   [ 0, 1, 1, 1 ],
+//   [ 0, 1, 2, 1 ],
+//   [ 0, 1, 4, 1 ],
+//   [ 1, 0, 0, 0 ],
+//   [ 1, 0, 0, 1 ],
+//   [ 1, 1, 0, 0 ],
+//   [ 1, 1, 1, 0 ],
+//   [ 1, 1, 2, 0 ],
+//   [ 1, 1, 4, 0 ],
+//   [ 1, 1, 0, 1 ],
+//   [ 1, 1, 1, 1 ],
+//   [ 1, 1, 2, 1 ],
+//   [ 1, 1, 4, 1 ],
+// ].map(([start, end, direction, enemy]) => {
+//   console.log(`${start ? '横队' : '方阵'}${start !== end ? `变阵${end ? '横队' : '方阵'}` : ''}${['正面', '斜向', '迂回侧翼', '背角包抄', '背后包抄'][direction]}冲击敌${enemy ? '横队' : '方阵'}`);
+  
+//   const directions = [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]];
+
+//   for (let i = 4; i >= (enemy ? 0 : 4); i--){
+
+    
+
+//     for (let j = 0; j <= 0; j++){
+//       let s = start === 0 ? [0, 0] : directions[0 + j];
+//       let t = directions[0 + j];
+//       let e = end === 0 ? [0, 0] : directions[(0 + j + direction) % 8];
+//       let x = enemy === 0 ? [0, 0] : directions[(0 + i + j) % 8];
+
+//       // console.log(
+//       //   `-`, ['敌暴露后方', '敌暴露侧后', '敌暴露侧翼', '敌暴露侧前', '正面迎敌'][i],
+//       //   Unit.prototype._calculateFormationBonus(s, t, e, x).toFixed(1), s,t,e,x
+//       // );
+//     }
+//   }
+// })
+

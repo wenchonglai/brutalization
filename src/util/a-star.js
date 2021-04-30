@@ -1,4 +1,6 @@
 export default function aStarSearch(destinationTile, pathFunc, {maxCostDistance = 1024} = {}){
+  if (this === destinationTile && !pathFunc(this)) return;
+  
   const queue = [this];
   const costDistanceMap = new Map([[this, 0]]);
   const parentMap = new Map();
@@ -21,18 +23,23 @@ export default function aStarSearch(destinationTile, pathFunc, {maxCostDistance 
     }
 
     if ( costDistanceToTile >= maxCostDistance) continue;
-
+    
     for (let adjacentTile of tile.getAdjacentTiles())
       if (pathFunc(adjacentTile)){
         let deltaCostDistance = adjacentTile.getCostDistance(tile);
+        let totalHeuristicDistance = costDistanceToTile + deltaCostDistance;
+        let adjacentMapPrevCostDistance = costDistanceMap.get(adjacentTile);
 
-        if ( costDistanceMap.get(adjacentTile) === undefined || 
-          costDistanceToTile + deltaCostDistance < Math.min(maxCostDistance, costDistanceMap.get(adjacentTile) )
+        if ( adjacentMapPrevCostDistance === undefined || 
+          totalHeuristicDistance < Math.min(
+            maxCostDistance, 
+            adjacentMapPrevCostDistance ?? maxCostDistance 
+          )
         ){
-          costDistanceMap.set(adjacentTile, costDistanceToTile + deltaCostDistance);
+          costDistanceMap.set(adjacentTile, totalHeuristicDistance);
           parentMap.set(adjacentTile, tile);
           heuristicMap.set(adjacentTile, adjacentTile.getCostDistance(destinationTile));
-          queue.push(adjacentTile)
+          queue.push(adjacentTile);
         }
       }
 

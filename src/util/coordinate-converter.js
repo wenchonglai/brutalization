@@ -21,3 +21,8 @@ export const screenToMap = ({x, y}, {translateX = 0, translateY = 0, zoom = 1} =
     y: (dy * COS / COS_X - dx * SIN) / GRID_SIZE
   }
 };
+
+export const screenToGrid = (...args) => {
+  let {x, y} = screenToMap(...args);
+  return {x: x | 0, y: y | 0}
+};
