@@ -9,7 +9,7 @@ import { City } from "./tiles/city.js";
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'DECEMBER'];
 const PLAYER_COLORS = [
   '#4f9fbf',
-  '#df7f7f',
+  '#ff5f8f',
   '#00bf00',
   '#9f7fff',
 ];
@@ -67,28 +67,69 @@ export default class Game{
       for (let y = 0; y < this.mapSize; y++)
         new Tile({x, y});
 
-    new City({
+    let sf = new City({
       player: this.currentPlayer, 
-      tile: Tile.getTile({x: 1, y: 1}), 
+      tile: Tile.getTile({x: 1, y: 7}), 
       population: 500
-    })
-    
+    });
+
+    let ny = new City({
+      player: this.currentPlayer,
+      tile: Tile.getTile({x: 14, y: 1}), 
+      population: 500
+    });
+
+    let la = new City({
+      player: this.players[1], 
+      tile: Tile.getTile({x: 2, y: 12}), 
+      population: 500
+    });
+
+    let lv = new City({
+      player: this.players[1], 
+      tile: Tile.getTile({x: 5, y: 10}), 
+      population: 500
+    });
+
     new Unit({
-      player: this.currentPlayer, tile: Tile.getTile({x: 0, y: 0}),
+      player: this.currentPlayer, 
+      tile: Tile.getTile({x: 0, y: 8}),
+      homeTile: sf.tile,
       population: 2500,
       formation: [1, 1]
     });
 
     new Unit({
-      player: this.currentPlayer, tile: Tile.getTile({x: 3, y: 5}),
+      player: this.currentPlayer,
+      tile: Tile.getTile({x: 3, y: 8}),
+      homeTile: sf.tile,
       population: 5000,
       formation: [1, 0]
     });
 
     new Unit({
-      player: this.currentPlayer, tile: Tile.getTile({x: 2, y: 0}),
+      player: this.currentPlayer,
+      tile: Tile.getTile({x: 11, y: 2}),
+      homeTile: ny.tile,
       population: 12500
     });
+
+    new Unit({
+      player: this.players[1],
+      tile: Tile.getTile({x: 2, y: 11}),
+      homeTile: la.tile,
+      population: 5000,
+      formation: [1, 0]
+    });
+
+    new Unit({
+      player: this.players[1],
+      tile: lv.tile,
+      homeTile: lv.tile,
+      population: 12500
+    });
+
+
 
     // new Unit({
     //   player: this.players[1], tile: Tile.getTile({x: 11, y: 1}),
@@ -113,7 +154,6 @@ export default class Game{
 
   start(){
     this.currentPlayer.activate();
-    console.log(this.date);
     this._turns ++;
   }
 

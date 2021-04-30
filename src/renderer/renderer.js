@@ -197,7 +197,6 @@ export default class Renderer extends VirtualDOM{
   }
 
   update(gameObject){
-    console.log(gameObject)
     SceneObject.getSceneObject(gameObject).update();
   }
   addToScene(gameObject){
@@ -214,7 +213,9 @@ export default class Renderer extends VirtualDOM{
   }
 
   focus(gameObject){
-    this._gameObject = gameObject;
+    if (gameObject){
+      this._gameObject = gameObject;
+    }
 
     if (gameObject){
       const {x, y} = mapToScreen(gameObject);

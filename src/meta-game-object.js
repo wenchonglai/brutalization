@@ -22,10 +22,13 @@ export default class MetaGameObject{
     if (action)
       this._actionQueue[0] = action;
   }
-  dispatch(action){
+  dispatch(action, callback){
     if (!action) return;
 
     this.state = this.actionReducer(action);
+
+    callback?.();
+
     this.player.update(this);
   }
 

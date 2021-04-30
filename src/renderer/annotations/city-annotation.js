@@ -6,6 +6,13 @@ export default class CityAnnotation extends MetaAnnotation{
       gameObject,
       className: "annotation city-annotation",
       isOpaque: true
-    }, '🏘 ', gameObject.name ?? '');
+    }, '🏛 ', gameObject.name ?? '');
+  }
+
+  update(){
+    MetaAnnotation.prototype.update.call(this);
+    this.setStyles({
+      zIndex: this.gameObject.x + this.gameObject.y + 1,
+    });
   }
 }

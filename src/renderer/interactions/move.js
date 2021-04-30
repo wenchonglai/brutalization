@@ -30,6 +30,8 @@ function handleMouseMoveCreator(mode){
             mode !== 'march' && tile === thisTile && tile.hasEnemy(gameObject)
         );
 
+        if (Tile.getPathCostDistance(path) > 14) path = undefined;
+
         if (path && mode !== 'march') 
           mode = path[path.length - 1].hasUnit ? 'attack' : 'raid';
 
@@ -89,6 +91,7 @@ function handleMouseUpCreator(mode){
     if (dragResult?.path){
       this.command(dragResult.destinationTile, dragResult.formation, dragResult.path);
       this.game.ui.handleResolve();
+      this.mapSVG.resetPathFinder();
       this.changeMapInteraction("", {});
     }
     this._dragMode = false;

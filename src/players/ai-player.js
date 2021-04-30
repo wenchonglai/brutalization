@@ -6,9 +6,8 @@ export default class AIPlayer extends Player{
       if (unit.movePoints < 0) {
         console.log('no move points')
       }
-      else if (unit.tiredNessLevel > 1){
-        console.log('too tired')
-          unit.rest();
+      else if (unit.tirednessLevel > 1){
+        // unit.rest();
       } else {
         let path = unit.tile.bfs(tile => tile.hasEnemy(unit), tile => tile);
         if (path)

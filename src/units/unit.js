@@ -2,24 +2,28 @@ import approximate from "../util/approximate.js";
 import MetaGameObject from "../meta-game-object.js";
 
 export class Unit extends MetaGameObject{
-  constructor({player, tile, population = 0, experience = 0, formation = [0, 0]} = {}){
+  constructor({player, tile, homeTile = tile, population = 0, experience = 0, formation = [0, 0]} = {}){
     super({player, tile, state: {
-      population, 
+      battleUnits: population,
+      logisticUnits: 0 ,
       experience,
       campTile: tile,
-      tiredNessLevel: 0, 
-      totalHunger: 0, totalFoodLoad: population * 5, 
+      tirednessLevel: 0, 
+      totalHunger: 0, 
+      totalFoodLoad: population * 5, 
       morality: 0, pandemicStage: 0,
       formation,
       movePoints: 0,
       pathToClosestHomeCity: []
     }});
-
+    
     this._originalState = Object.freeze({
       tile, population
     });
 
-    this._homeTile = tile;
+    this._homeTile = homeTile;
+
+    Object.assign(this.state, this.balanceUnits());
   }
 
   destruct(){
@@ -32,24 +36,30 @@ export class Unit extends MetaGameObject{
     this.player._unresolved.delete(this);
     MetaGameObject.prototype.deregister();
   }
+
+  dispatch(action){
+    MetaGameObject.prototype.dispatch.call(this, action, this.balanceUnits.bind(this));
+  }
   
   get originalState(){ return this._originalState; }
-  get homeTile(){ return this.originalState.tile; }
+  get homeTile(){ return this._homeTile; }
   get campTile(){ return this.state.campTile; }
-  get population(){ return this.state.population; }
+  get battleUnits(){ return this.state.battleUnits; }
+  get logisticUnits(){ return this.state.logisticUnits; }
   get experience(){ return this.state.experience; }
   get pandemicStage(){ return this.state.pandemicStage; }
-  get tiredNessLevel(){ return this.state.tiredNessLevel; }
-  get hungerLevel(){ return this.state.totalHunger / this.state.population; }
+  get tirednessLevel(){ return this.state.tirednessLevel; }
+  get hungerLevel(){ return this.state.totalHunger / this.state.battleUnits; }
   get morality(){ return this.state.morality; }
   get movePoints(){ return this.state.movePoints; }
   get nextCommand(){ return this.state.nextCommand; }
+  get population(){ return this.battleUnits + this.logisticUnits; }
   get moveable(){ return this.movePoints >= 0; }
   get tasked(){ 
     return !this.moveable || this.actionQueue.length > 0 || !!this.nextCommand
   }
   get overallWearinessLevel(){
-    return 1 + Math.max(0, this.tiredNessLevel - 1) + Math.max(0, this.hungerLevel - 1) + Math.max(0, this.pandemicStage - 1) ** 0.5 / 4;
+    return 1 + Math.max(0, this.tirednessLevel - 1) + Math.max(0, this.hungerLevel - 1) + Math.max(0, this.pandemicStage - 1) ** 0.5 / 4;
   }
   get staminaLevel(){ return 1 / this.overallWearinessLevel; }
   get formation(){ return this.state.formation; }
@@ -60,12 +70,13 @@ export class Unit extends MetaGameObject{
 
     return {
       information: {
-        population: approximate(this.population, {scales: [1]}),
-        experience: approximate(this.experience),
-        hunger: approximate(this.hungerLevel),
-        stamina: approximate(this.staminaLevel, {isPercentage: true}),
-        morality: approximate(this.morality),
-        pandemic: approximate(this.pandemicStage),
+        "battle units": this.battleUnits,
+        "logistic units": this.logisticUnits,
+        experience: this.experience,
+        hunger: this.hungerLevel,
+        stamina: this.staminaLevel,
+        morality: this.morality,
+        pandemic: this.pandemicStage,
         movePoints: this.movePoints,
         formation: this.formation
       },
@@ -115,7 +126,7 @@ export class Unit extends MetaGameObject{
     return Math.min(1.25 ** (this.morality * 0.8), 1.25);
   }
   calculateMilitaryMight(){
-    return (this.population ** 0.5) * 
+    return (this.battleUnits ** 0.5) * 
       this.staminaLevel * 
       this.calculateMoralityBonus() * 
       ((1 + this.experience) ** 0.5);
@@ -182,20 +193,35 @@ export class Unit extends MetaGameObject{
     );
   }
 
+  balanceUnits(){
+    if (this.campTile === this.tile){
+      let costDistance = this.campTile.costDistanceTo(
+        this.homeTile,
+        tile => !tile.hasEnemy(this)
+      );
+
+      const population = this.population;
+      const battleUnits = population * (15 - costDistance) / 15 | 0;
+      const logisticUnits = population - battleUnits;
+
+      Object.assign(this.state, {battleUnits, logisticUnits});
+    }
+  }
+
   // state and action reducer
   actionReducer(action){
     Object.freeze(this.state);
 
     const newState = {...this.state};
-    const foodConsumption = Math.min(newState.population, newState.totalFoodLoad);
+    const foodConsumption = Math.min(newState.battleUnits, newState.totalFoodLoad);
     const isPandemic = Math.random() <= this.calculatePandemicPossibility();
 
-    newState.totalHunger += newState.population - foodConsumption;
+    newState.totalHunger += newState.battleUnits - foodConsumption;
     newState.totalFoodLoad -= foodConsumption;
     newState.pandemicStage = Math.max(0, newState.pandemicStage + (isPandemic ? 1 : -1) );
-    newState.population -= Math.random() * newState.population * (
+    newState.battleUnits -= Math.random() * newState.battleUnits * (
       Math.min(newState.hungerLevel - 1, 0) + 
-      Math.min(newState.tiredNessLevel / 2 - 1, 0) + 
+      Math.min(newState.tirednessLevel / 2 - 1, 0) + 
       newState.pandemicStage
     ) / 25 | 0;
     newState.nextCommand = action.nextCommand;
@@ -203,12 +229,12 @@ export class Unit extends MetaGameObject{
     switch (action.type){
       case 'rest': {
         newState.movePoints -= 2;
-        newState.tiredNessLevel -= 1;
+        newState.tirednessLevel -= 1;
         return newState;
       };
       case 'guard': {
         newState.movePoints -= 2;
-        newState.tiredNessLevel -= 0.5;
+        newState.tirednessLevel -= 0.5;
         newState.experience += Math.random() / 8;
         return {...newState, formation: action.formation};
       }
@@ -216,13 +242,13 @@ export class Unit extends MetaGameObject{
         this.register({tile: action.targetTile});
         
         newState.movePoints -= action.costDistance;
-        newState.tiredNessLevel += 0.125 * action.costDistance;
+        newState.tirednessLevel += 0.125 * action.costDistance;
         newState.experience += Math.random() * action.costDistance/ 4;
 
-        if (newState.tiredNessLevel > 1)
+        if (newState.tirednessLevel > 1)
           newState.morality -= 0.125 * action.costDistance * this.overallWearinessLevel;
 
-        return {
+          return {
           ...newState, 
           campTile: action.targetTile,
           formation: action.formation
@@ -230,11 +256,11 @@ export class Unit extends MetaGameObject{
       }
       case 'pillage': {
         newState.movePoints -= 2;
-        newState.tiredNessLevel += 0.125;
+        newState.tirednessLevel += 0.125;
 
         if (action.casualty){
-          newState.tiredNessLevel += 0.125;
-          newState.population -= action.casualty;
+          newState.tirednessLevel += 0.125;
+          newState.battleUnits -= action.casualty;
         }
         else newState.morality = Math.min(newState.morality + 1, 0);
         
@@ -246,22 +272,22 @@ export class Unit extends MetaGameObject{
         this.register({tile: action.targetTile});
 
         newState.movePoints -= action.costDistance;
-        newState.tiredNessLevel += 0.25 * action.costDistance;
+        newState.tirednessLevel += 0.25 * action.costDistance;
         newState.morality -= 0.25 * this.overallWearinessLevel;
         newState.experience += Math.random() * action.costDistance / 2;
 
-        if (newState.tiredNessLevel > 1)
+        if (newState.tirednessLevel > 1)
           newState.morality -= 0.25 * action.costDistance * this.overallWearinessLevel;
 
         return newState;
       }
       case 'battle': {
         newState.movePoints -= action.movePoints ?? 2;
-        newState.tiredNessLevel += 1;
+        newState.tirednessLevel += 1;
         newState.morality += action.morality;
-        newState.population -= action.casualty;
+        newState.battleUnits -= action.casualty;
         newState.experience += Math.random() * 3;
-        newState.population -= action.casualty;
+        newState.battleUnits -= action.casualty;
         return newState;
       }
       default: {
@@ -273,6 +299,7 @@ export class Unit extends MetaGameObject{
   endTurn(){
     if (this.movePoints >= 0){
       this.dispatch(this.actionQueue.shift());
+
       let {type, cancelCondition, ...args} = this.nextCommand || {};
       this[type]?.(...Object.values(args));
     }
@@ -325,7 +352,7 @@ export class Unit extends MetaGameObject{
     if (targetTile.hasUnit){
       
     } else {
-      let costDistance = this.tile.getCostDistance(targetTile);
+      let costDistance = this.tile.getEuclideanCostDistance(targetTile);
 
       this.dispatch({ type: 'march', targetTile,
         costDistance,
@@ -343,7 +370,7 @@ export class Unit extends MetaGameObject{
     this.tile.rangeAssign(2, function(distance){
       if (this.playerId !== playerId){
         let attitude = this.attitudes[playerId] || 0;
-        this.attitudes[playerId] = attitude - (3 - distance) * self.population / 65536;
+        this.attitudes[playerId] = attitude - (3 - distance) * self.battleUnits / 65536;
       }
     });
 
@@ -365,8 +392,12 @@ export class Unit extends MetaGameObject{
       tile => !tile.hasUnit ||
         tile === destinationTile && tile.hasEnemy(this)
     );
+    
+    if (!path) return;
 
     const targetTile = path[1];
+
+    if (!targetTile) return;
 
     let enemy = targetTile.getEnemy(this);
 
@@ -382,9 +413,9 @@ export class Unit extends MetaGameObject{
         (1 + Math.max(-formationBonus, 0)) *
         ( Math.random() * 1 + 1 ) / 1.5;
       const tolerableCasualty1 = 
-        this.calculateTolerableCasualtyRate() * this.population * ((Math.random() + 2) / 2.5);
+        this.calculateTolerableCasualtyRate() * this.battleUnits * ((Math.random() + 2) / 2.5);
       const tolerableCasualty2 = 
-        enemy.calculateTolerableCasualtyRate() * enemy.population * ((Math.random() + 2) / 2.5);
+        enemy.calculateTolerableCasualtyRate() * enemy.battleUnits * ((Math.random() + 2) / 2.5);
 
       let casualty1, casualty2, moralityDelta = 1;
 
@@ -403,7 +434,7 @@ export class Unit extends MetaGameObject{
       this.dispatch({type: 'battle', casualty: casualty1, morality: moralityDelta - 0.25});
       enemy.dispatch({type: 'battle', movePoints: 0, casualty: casualty2, morality: -moralityDelta - 0.25});
     } else {
-      let costDistance = this.tile.getCostDistance(targetTile);
+      let costDistance = this.tile.getEuclideanCostDistance(targetTile);
 
       this.dispatch({ type: 'raid',
         targetTile,

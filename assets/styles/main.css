@@ -252,3 +252,13 @@ div.unit-annotation.active {
 div.unit-annotation.active::after{
   box-shadow: 0px 92px 16px 16px #ffefbf1f;
 }
+
+div .unit-annotation div.overlapping-emoji > *{
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%);
+}
+
+div .unit-annotation div.overlapping-emoji > :last-child{
+  transform: translate(-45%);
+}

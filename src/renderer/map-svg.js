@@ -179,6 +179,10 @@ export default class MapSVG extends VirtualDOM{
   //   else this.gridLayer.moveDestinationIndicator(pos);
   // }
 
+  resetPathFinder(pos, path, mode){
+    this.gridLayer.updatePathfinder({x: -1, y: -1}, undefined, 'march')
+  }
+
   updatePathfinder(pos, path, mode){
     this.gridLayer.updatePathfinder(pos, path, mode)
   }

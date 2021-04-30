@@ -4,7 +4,7 @@ export default function aStarSearch(destinationTile, pathFunc, {maxCostDistance 
   const queue = [this];
   const costDistanceMap = new Map([[this, 0]]);
   const parentMap = new Map();
-  const heuristicMap = new Map([[this, this.getCostDistance(destinationTile)]]);
+  const heuristicMap = new Map([[this, this.getEuclideanCostDistance(destinationTile)]]);
 
   while (queue.length){
     let tile = queue.shift();
@@ -26,7 +26,7 @@ export default function aStarSearch(destinationTile, pathFunc, {maxCostDistance 
     
     for (let adjacentTile of tile.getAdjacentTiles())
       if (pathFunc(adjacentTile)){
-        let deltaCostDistance = adjacentTile.getCostDistance(tile);
+        let deltaCostDistance = adjacentTile.getEuclideanCostDistance(tile);
         let totalHeuristicDistance = costDistanceToTile + deltaCostDistance;
         let adjacentMapPrevCostDistance = costDistanceMap.get(adjacentTile);
 
@@ -38,7 +38,7 @@ export default function aStarSearch(destinationTile, pathFunc, {maxCostDistance 
         ){
           costDistanceMap.set(adjacentTile, totalHeuristicDistance);
           parentMap.set(adjacentTile, tile);
-          heuristicMap.set(adjacentTile, adjacentTile.getCostDistance(destinationTile));
+          heuristicMap.set(adjacentTile, adjacentTile.getEuclideanCostDistance(destinationTile));
           queue.push(adjacentTile);
         }
       }

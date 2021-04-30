@@ -80,14 +80,31 @@ export default class Tile {
     }
   }
 
-  getDistance(tile){
+  getEuclideanDistance(tile){
     return tile ? 
       (( (this.x - tile.x) ** 2 + (this.y - tile.y) ** 2 ) ** 0.5).toFixed(4) : 
       Infinity;
   }
 
-  getCostDistance(tile){
-    return this.getDistance(tile) * 2;
+  getEuclideanCostDistance(tile){
+    return this.getEuclideanDistance(tile) * 2;
+  }
+
+  costDistanceTo(tile, ...args){
+    const path = this.aStarSearch(tile, ...args);
+    return Tile.getPathCostDistance(path);
+  }
+
+  static getPathCostDistance(path){
+    if (!path) return Infinity;
+    
+    let distance = 0;
+
+    for (let i = 1, len = path.length; i < len; i ++){
+      distance += path[i - 1].getEuclideanCostDistance(path[i]);
+    }
+    
+    return distance;
   }
 
   endYear(){
@@ -130,7 +147,7 @@ export default class Tile {
     for (let i = -range, tile; i <= range; i += 1)
       for (let j = -range; j <= range; j += 1){
         let tile = Tile.getTile({x: this.x + i, y: this.y + j});
-        tile && assignFunction.call(tile, this.getDistance(tile));
+        tile && assignFunction.call(tile, this.getEuclideanDistance(tile));
       }
   }
 

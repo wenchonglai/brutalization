@@ -1,6 +1,10 @@
 import Player from "./player.js";
 
 export default class HumanPlayer extends Player{
+  get unresolved(){
+    return this._unresolved;
+  }
+
   focus(gameObject, res){
     Player.prototype.focus.call(this, gameObject, res);
     this.game.focus(gameObject, res);

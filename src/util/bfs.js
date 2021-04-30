@@ -19,8 +19,7 @@ export default function bfs(findFunc, pathFunc, {maxCostDistance = 1024} = {}){
 
       for (let adjacentTile of tile.getAdjacentTiles())
         if (pathFunc(adjacentTile)){
-          
-          let deltaCostDistance = adjacentTile.getCostDistance(tile);
+          let deltaCostDistance = adjacentTile.getEuclideanCostDistance(tile);
           
           if ( 
             costDistanceMap.get(adjacentTile) === undefined || 
