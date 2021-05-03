@@ -10,12 +10,14 @@ export default class UI extends VirtualDOM{
     this._informationPanel = new InformationPanel();
     this._commandsPanel = new CommandsPanel({game});
     this._resolveFunctions = new Map();
-    this.append(this.informationPanel, this.commandsPanel);
+    this._dropdownMenu = new DropDownMenu();
+    this.append(this.informationPanel, this.commandsPanel, this.dropdownMenu);
   }
 
   get informationPanel(){ return this._informationPanel; }
   get commandsPanel(){ return this._commandsPanel; }
   get gameObject(){ return this._gameObject; }
+  get dropdownMenu(){ return this._dropdownMenu; }
 
   handleResolve(){
     const gameObject = this.gameObject;
@@ -170,4 +172,63 @@ function IconButton({id, command, selected, handleClick, handleResolve, moveable
       }, text)
     )
   );
+}
+
+class DropDownMenu extends VirtualDOM{
+  constructor(){
+    super("div", {className: `dropdown-modal`},
+      _("div", {className: "mask", onClick: () => this.handleBlur()}),
+    );
+
+    this._dropdownButton = _("div", {
+      className: "dropdown-button",
+      onClick: () => this.handleClick()
+    }, _("i", {className: "fas fa-cog"}));
+
+    this._menu = _("ul", {className: "dropdown-menu"},
+      _("li", {className: "dropdown-item", onClick: () => this.showHelp()}, "How to play this game"),
+      _("li", {className: "dropdown-item", onClick: () => this.redirectToRepo()}, "About this game"),
+      _("li", {className: "dropdown-item", onClick: () => this.redirectToLinkedIn()}, "About Wenchong Lai")
+    );
+
+    this._helpWindow = _("div", {className: "help-window"}, 
+      _("h2", {}, "How to Play This Game"),
+      _("p", {}, 
+        "Brutalization is a turn-based single player strategy board game that implements the logic of real wars and simulates marching and battles affected by logistics, morality, and formations. You can compete against computer players, control units to attack enemy units, and eventually win the game by having higher scores or defeating other computer players.",
+        _("p", {}, "- Click on a unit to control its moves"),
+        _("p", {}, "- A unit can rest or stay alerted in place to recover from tiredness."),
+        _("p", {}, `- A unit can march to a different position. After clicking the "march" button, click on the destination tile you would like the unit to move to. Drag while clicking to set the desired formation.`),
+        _("p", {}, `- A unit can raid to a different position. After clicking the "raid" button, click on the destination tile you would like the unit to raid. Drag while clicking to set the desired formation. CAVEAT: raiding units are more vulnerable.`),
+        _("p", {}, `- Click the "pillage" button to pillage. Pillaging a tile may receive a small amount of food.`),
+      )
+    );
+
+    this.append(this._dropdownButton, this._menu, this._helpWindow);
+
+    this._active = false;
+  }
+
+  handleClick(){
+    this._active = !this._active;
+    this.toggleClass("active");
+  }
+
+  handleBlur(){
+    this._active = false;
+    this.removeClass("active");
+  }
+
+  showHelp(){
+    this._helpWindow.classList.add("active");
+  }
+
+  redirectToRepo(){
+    this._helpWindow.classList.remove("active");
+    window.location.href = "https://github.com/wenchonglai/brutalization";
+  }
+
+  redirectToLinkedIn(){
+    this._helpWindow.classList.remove("active");
+    window.location.href = "https://www.linkedin.com/in/wenchong-lai-4296424b/";
+  }
 }

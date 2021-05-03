@@ -13,6 +13,10 @@ body {
   background: linear-gradient(#373f57, #272f37);
 }
 
+li {
+  list-style: none;
+}
+
 img#improvements {
   display: none;
 }
@@ -114,7 +118,7 @@ a {
   backdrop-filter: blur(8px);
 }
 
-.ui .commands > div.button.command-button {
+.ui .commands > div.button.command-button, div.dropdown-modal > .dropdown-button {
   display: block;
   background: radial-gradient(#21201b, #382516);
   color: #f3a25a;
@@ -138,7 +142,8 @@ a {
 }
 
 .ui .commands > div.button.command-button:hover,
-.ui a.end-turn:hover{
+.ui a.end-turn:hover, 
+div.dropdown-modal > .dropdown-button:hover{
   background: radial-gradient(#4d2d17, #382516);
 }
 
@@ -262,4 +267,83 @@ div .unit-annotation div.overlapping-emoji > *{
 
 div .unit-annotation div.overlapping-emoji > :last-child{
   transform: translate(-45%);
+}
+
+div.dropdown-modal{
+  position: fixed;
+  width: 100vw;
+  height: 0;
+}
+
+div.dropdown-modal > .mask{
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  backdrop-filter: blur(8px);
+  background-color: #ffffff7f;
+  display: none;;
+}
+
+div.dropdown-modal.active > .mask{
+  display: block;
+}
+
+div.dropdown-modal > .dropdown-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+}
+
+div.dropdown-modal > .dropdown-button > i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+div.dropdown-modal .dropdown-menu {
+  width: 256px;
+  position: absolute;
+  top: 40px;
+  right: 8px;
+  display: none;
+  flex-direction: column;
+}
+
+div.dropdown-modal.active .dropdown-menu {
+  display: flex;
+}
+
+div.dropdown-modal .dropdown-item {
+  padding: 8px;
+  background-color: #776f57;
+  cursor: pointer;
+}
+
+div.dropdown-modal .dropdown-item:hover {
+  background-color: #f3a25a;
+}
+
+div.dropdown-modal .help-window{
+  width: 512px;
+  height: 512px;
+  overflow-y: scroll;
+  background-color: #ffffff;
+  position: absolute;
+  margin: auto;
+  top: 50vh;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 6px 6px #ffffff1f;
+  display: none;
+}
+
+div.dropdown-modal.active .help-window{
+  display: block;
 }
