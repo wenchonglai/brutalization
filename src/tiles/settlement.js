@@ -6,4 +6,5 @@ export class Settlement extends Improvement{
 
 export class Camp extends Settlement{
   static COMBUSTIBILITY = 2;
+  
 }

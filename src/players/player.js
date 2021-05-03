@@ -1,5 +1,5 @@
+import { City } from "../tiles/city.js";
 import { Improvement } from "../tiles/improvement.js";
-import { Settlement } from "../tiles/settlement.js";
 
 export default class Player{
   constructor({id, game, color}){
@@ -7,7 +7,7 @@ export default class Player{
     this._game = game;
     this._color = color;
     this._units = new Set();
-    this._settlements = new Set();
+    this._cities = new Set();
     this._viewport = {x: 0, y: 0};
     this._selected = undefined;
     this._isTurn = true;
@@ -15,16 +15,34 @@ export default class Player{
   get id(){ return this._id; }
   get game(){ return this._game; }
   get color(){ return this._color; }
-  get settlements(){ return this._settlements; }
+
+  get cities(){ return this._cities; }
   get units(){ return this._units; }
   get viewport(){ return this._viewport; }
   get selected(){ return this._selected; }
+  get accessibleTiles(){ return this._accessibleTiles; } 
+
+
+  updateAccessibleTiles(){
+    const set = new Set();
+
+    for (let city of this.cities){
+      let subset = city.tile.bfs(
+        () => false, tile => !tile.hasEnemy(this),
+        {maxCostDistance: 14, returnAll: true}
+      );
+      
+      Array.from(subset || []).forEach(tile => set.add(tile))
+    }
+
+    this._accessibleTiles = set;
+  }
 
   register(gameObject){
     gameObject._player = this;
 
     if (gameObject instanceof Unit) this.units.add(gameObject)
-    else if (gameObject instanceof Settlement) this.settlements.add(gameObject)
+    else if (gameObject instanceof City) this.cities.add(gameObject)
     else if (gameObject instanceof Improvement) this.improvements.add(gameObject);
 
     this.game.addToScene(gameObject);
@@ -36,7 +54,7 @@ export default class Player{
     gameObject._player = undefined;
     
     if (gameObject instanceof Unit) this.units.delete(gameObject)
-    else if (gameObject instanceof Settlement) this.settlements.delete(gameObject)
+    else if (gameObject instanceof City) this.cities.delete(gameObject)
     else if (gameObject instanceof Improvement) this.improvements.delete(gameObject);
   }
 
@@ -69,6 +87,7 @@ export default class Player{
 
   update(gameObject){
     this.game.update(gameObject);
+    this.updateAccessibleTiles();
   }
   
   endTurn(){

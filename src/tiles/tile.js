@@ -3,6 +3,7 @@ import bfs from "../util/bfs.js";
 import { Improvement } from "./improvement.js";
 import { Settlement } from "./settlement.js";
 import { Unit } from "../units/unit.js";
+import { City } from "./city.js";
 
 const TERRAINS = [
   "OCEAN",      // 0
@@ -34,7 +35,7 @@ export default class Tile {
     this._y = y;
     this._terrain = terrain;
     this._improvements = new Set();
-    this._settlements = new Set();
+    this._city = undefined;
     this._units = new Set();
     this._connections = [];
     this._city = null;
@@ -65,12 +66,14 @@ export default class Tile {
   get populations(){ return this._populations; }  // total populations (rural, urban, drafted) of this tile
   get attitudes(){ return this._attitudes; }      // attitudes towards different countries
   get improvements(){ return this._improvements; }
-  get settlements(){ return this._settlements; }
+  get city(){ return this._city; }
+  get camp(){ return this._camp; }
   get units(){ return this._units; }
   get hasUnit(){ return this.units.size > 0; }
 
   hasEnemy(gameObject){
-    return Array.from(this.units).some(unit => unit.player !== gameObject.player);
+    return Array.from(this.units)
+      .some(unit => unit.player !== gameObject?.player ?? gameObject);
   }
 
   getEnemy(gameObject){
@@ -152,13 +155,13 @@ export default class Tile {
   }
 
   // get the closest path when the destination tile is certain (fast)
-  aStarSearch(destinationTile, pathFunc, {maxDistance = 4096} = {}){
-    return aStarSearch.call(this, destinationTile, pathFunc, {maxDistance});
+  aStarSearch(destinationTile, pathFunc, {maxCostDistance = 4096} = {}){
+    return aStarSearch.call(this, destinationTile, pathFunc, {maxCostDistance});
   }
 
   // find the closest tile meeting the findFunc criteria (slow)
-  bfs(findFunc, pathFunc, {maxDistance = 4096} = {}){
-    return bfs.call(this, findFunc, pathFunc, {maxDistance});
+  bfs(findFunc, pathFunc, ...args){
+    return bfs.call(this, findFunc, pathFunc, ...args);
   }
 
   register(gameObject){
@@ -166,16 +169,26 @@ export default class Tile {
     gameObject._tile = this;
     
     if (gameObject instanceof Unit) this.units.add(gameObject)
-    else if (gameObject instanceof Settlement) this.settlements.add(gameObject)
-    else if (gameObject instanceof Improvement) this.improvements.add(gameObject);
+    else if (gameObject instanceof City) this._city = gameObject;
   }
 
   deregister(gameObject){
     gameObject._tile = undefined;
     
     if (gameObject instanceof Unit) this.units.delete(gameObject)
-    else if (gameObject instanceof Settlement) this.settlements.delete(gameObject)
-    else if (gameObject instanceof Improvement) this.improvements.delete(gameObject);
+    else if (gameObject instanceof City) delete this._city;
+  }
+
+  registerCamp(gameObject){
+    gameObject.campTile?.deregisterCamp(gameObject);
+    gameObject._campTile = this;
+
+    this._camp = gameObject;
+  }
+
+  deregisterCamp(gameObject){
+    gameObject._campTile = undefined;
+    delete this._camp;
   }
 
   /* User-related */

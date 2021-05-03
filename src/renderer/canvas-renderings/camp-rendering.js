@@ -6,12 +6,7 @@ export default class CityRendering extends MetaCanvasRendering{
     super(gameObject, renderer, renderer.mapCanvas);
   }
   update(){
-    let {x, y, tiles} = this.gameObject;
-
-    for (let tile of tiles){
-      const isEven = (tile.x + tile.y) % 2 === 0;
-
-      this.renderer.render(tile);
-    }
+    // let {x, y} = this.gameObject;
+    // this.render({x, y}, 'camp');
   }
 }

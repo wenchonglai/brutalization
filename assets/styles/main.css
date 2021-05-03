@@ -175,7 +175,7 @@ div.annotation{
   background-color: #cfcfcf;
   user-select: none;
   transform-origin: 50% 44px;
-  transform: translate(-50%, -50px) scale(0.8);
+  transform: translate(-50%, -60px) scale(0.8);
   text-align: center;
   font-size: 22px;
   line-height: 36px;
@@ -188,6 +188,7 @@ div.annotation{
 
 div.unit-annotation{
   width: 36px;
+  transform: translate(-50%, -50px) scale(0.8);
 }
 
 div.city-annotation{

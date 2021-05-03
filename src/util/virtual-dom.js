@@ -94,7 +94,7 @@ export class VirtualCanvas extends VirtualDOM{
     save && this.ctx.restore();
   }
 
-  clearRect({x, y, width, height}){
+  clearRect(x, y, width, height){
     this.ctx.clearRect(x, y, width, height);
   }
 

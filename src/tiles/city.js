@@ -63,7 +63,8 @@ export class City extends Settlement{
       },
       commands: {
         settle: undefined,
-        draft: undefined
+        draft: undefined,
+        train: undefined
       }
     }
   }

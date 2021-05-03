@@ -2,6 +2,7 @@ export default class MetaGameObject{
   constructor({player, tile, state}){
     this._state = {...state};
     this._actionQueue = [];
+    this.campTile?.registerCamp(this);
     this.register({player, tile});
   }
   

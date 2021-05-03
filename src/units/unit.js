@@ -1,13 +1,14 @@
 import approximate from "../util/approximate.js";
 import MetaGameObject from "../meta-game-object.js";
+import { Camp } from "../tiles/settlement.js";
 
 export class Unit extends MetaGameObject{
-  constructor({player, tile, homeTile = tile, population = 0, experience = 0, formation = [0, 0]} = {}){
+  constructor({player, tile, homeTile = tile, campTile = tile, population = 0, experience = 0, formation = [0, 0]} = {}){
     super({player, tile, state: {
       battleUnits: population,
       logisticUnits: 0 ,
       experience,
-      campTile: tile,
+      campTile: campTile,
       tirednessLevel: 0, 
       totalHunger: 0, 
       totalFoodLoad: population * 5, 
@@ -22,6 +23,7 @@ export class Unit extends MetaGameObject{
     });
 
     this._homeTile = homeTile;
+    this._campTile = campTile;
 
     Object.assign(this.state, this.balanceUnits());
   }
@@ -63,6 +65,11 @@ export class Unit extends MetaGameObject{
   }
   get staminaLevel(){ return 1 / this.overallWearinessLevel; }
   get formation(){ return this.state.formation; }
+
+  getNaturalFormation(tile){
+    let {x, y} = tile;
+    return [x - this.x, y - this.y];
+  }
   
   // user interaction
   toUserInterface(){
@@ -72,7 +79,7 @@ export class Unit extends MetaGameObject{
       information: {
         "battle units": this.battleUnits,
         "logistic units": this.logisticUnits,
-        experience: this.experience,
+        experience: approximate(this.experience),
         hunger: this.hungerLevel,
         stamina: this.staminaLevel,
         morality: this.morality,
@@ -114,12 +121,10 @@ export class Unit extends MetaGameObject{
       (this.overallWearinessLevel ** 0.5);
   }
 
-  calculatePathToClosestHomeCity(){
-    return this.tile.bfs(
-      tile => tile.city && tile.city.totalFoodStorage > 0,
-      tile => 
-        !tile.hasUnit && 
-        tile.playerId === this.playerId
+  calculatePathToClosestHomeCity(targetTile = this.tile){
+    return targetTile.bfs(
+      tile => tile.city, //&& tile.city.totalFoodStorage > 0,
+      tile => !tile.hasEnemy(this)
     );
   }
   calculateMoralityBonus(){
@@ -134,9 +139,12 @@ export class Unit extends MetaGameObject{
   calculateTolerableCasualtyRate(){
     return ((1 + this.experience) ** 0.5) * this.calculateMoralityBonus() / 64;
   }
+  
+  get isDenselyFormed(){ !!this.formation?.every(el => el === 0); }
+
   _calculatechargeTime(formation1, formation2, attackMode = false){
-    const isDenselyFormed1 = formation1.every(el => el === 0);
-    const isDenselyFormed2 = formation2.every(el => el === 0);
+    const isDenselyFormed1 = formation1.isDenselyFormed;
+    const isDenselyFormed2 = formation2.isDenselyFormed;
     
     if (isDenselyFormed1 && isDenselyFormed2) return 0;
     if (isDenselyFormed1 || isDenselyFormed2) return 0.5;
@@ -164,8 +172,8 @@ export class Unit extends MetaGameObject{
     const chargeTime = 
       this._calculatechargeTime(originalFormation, chargeFormation) +
       this._calculatechargeTime(chargeFormation, newFormation, true);
-    const isDenselyFormed = newFormation.every(el => el === 0);
-    const enemyIsDenselyFormed = enemyFormation.every(el => el === 0);
+    const isDenselyFormed = newFormation.isDenselyFormed;
+    const enemyIsDenselyFormed = enemyFormation.isDenselyFormed;
     const attackAngle = Math.atan2(...(
       isDenselyFormed ? chargeFormation : newFormation
     ));
@@ -191,6 +199,10 @@ export class Unit extends MetaGameObject{
       formation,
       enemy.formation
     );
+  }
+
+  registerCamp(tile){
+    tile.registerCamp(this);
   }
 
   balanceUnits(){
@@ -247,6 +259,7 @@ export class Unit extends MetaGameObject{
 
         if (newState.tirednessLevel > 1)
           newState.morality -= 0.125 * action.costDistance * this.overallWearinessLevel;
+          this.registerCamp(action.targetTile);
 
           return {
           ...newState, 
@@ -331,12 +344,34 @@ export class Unit extends MetaGameObject{
     });
   }
 
+  getValidMarchPath(destinationTile){
+    this.player.updateAccessibleTiles();
+
+    return this.tile.aStarSearch(
+      destinationTile, 
+      tile => 
+        this.player.accessibleTiles.has(tile) &&
+        (!tile.hasUnit || this.tile === destinationTile )
+    )
+  }
+
+  getValidRaidPath(destinationTile){
+    return this.tile.aStarSearch(
+      destinationTile, 
+      tile => 
+        (!tile.hasUnit || tile === destinationTile && tile.hasEnemy(this) )
+    )
+  }
+
   march(destinationTile, formation, path){
+
+    const pathToClosestHomeCity = this.calculatePathToClosestHomeCity;
+
     if (destinationTile === this.tile) {
       this.dispatch({ type: 'march', 
         targetTile: destinationTile,
         costDistance: 1,
-        pathToClosestHomeCity: this.calculatePathToClosestHomeCity(),
+        pathToClosestHomeCity: pathToClosestHomeCity,
         formation: formation,
       });
 
@@ -349,15 +384,15 @@ export class Unit extends MetaGameObject{
 
     const targetTile = path[1];
 
-    if (targetTile.hasUnit){
-      
-    } else {
+    if (!targetTile.hasUnit){
       let costDistance = this.tile.getEuclideanCostDistance(targetTile);
 
       this.dispatch({ type: 'march', targetTile,
         costDistance,
-        pathToClosestHomeCity: this.calculatePathToClosestHomeCity(),
-        formation,
+        pathToClosestHomeCity: pathToClosestHomeCity,
+        formation: targetTile === destinationTile ? 
+          formation :
+          this.getNaturalFormation(targetTile),
         nextCommand: { type: 'march', destinationTile, formation }
       });
     }
@@ -439,7 +474,7 @@ export class Unit extends MetaGameObject{
       this.dispatch({ type: 'raid',
         targetTile,
         costDistance,
-        formation: targetTile !== destinationTile ? [undefined, undefined] : formation,
+        formation: formation,
         pathToClosestHomeCity: this.calculatePathToClosestHomeCity(),
         nextCommand: { type: 'raid', destinationTile, formation }
       });

@@ -21,16 +21,11 @@ function handleMouseMoveCreator(mode){
         this._highlightedGridXY = {x, y};
 
         const gameObject = this.gameObject;
-        const thisTile = Tile.getTile({x, y});
-
-        path = gameObject.tile.aStarSearch(
-          thisTile, 
-          tile => !tile.hasUnit ||
-            mode === 'march' && gameObject.tile === thisTile ||
-            mode !== 'march' && tile === thisTile && tile.hasEnemy(gameObject)
-        );
-
-        if (Tile.getPathCostDistance(path) > 14) path = undefined;
+        const targetTile = Tile.getTile({x, y});
+        
+        path = mode === 'march' ? 
+            gameObject.getValidMarchPath(targetTile) :
+            gameObject.getValidRaidPath(targetTile)
 
         if (path && mode !== 'march') 
           mode = path[path.length - 1].hasUnit ? 'attack' : 'raid';
@@ -86,13 +81,15 @@ function handleMouseUpCreator(mode){
   return function handleMouseUp(e){
     const dragResult = handleMouseMoveCreator(mode).call(this, e);
 
-    path = undefined;
+    path = dragResult?.path;
 
-    if (dragResult?.path){
+    if (path){
       this.command(dragResult.destinationTile, dragResult.formation, dragResult.path);
       this.game.ui.handleResolve();
       this.mapSVG.resetPathFinder();
       this.changeMapInteraction("", {});
+
+      path = undefined;
     }
     this._dragMode = false;
   }

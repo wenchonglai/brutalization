@@ -2,6 +2,7 @@ import Player from "./player.js";
 
 export default class AIPlayer extends Player{
   async promptAction(idleUnits){
+
     for (let unit of idleUnits)
       if (unit.movePoints < 0) {
         console.log('no move points')

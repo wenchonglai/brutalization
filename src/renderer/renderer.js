@@ -5,6 +5,7 @@ import SceneObject from "./scene-object.js";
 import MapSVG from "./map-svg.js";
 import {PIXEL_PER_GRID, MIN_ZOOM, MAX_ZOOM} from "../settings/map-settings.js";
 import {marchEventListeners, raidEventListeners} from "./interactions/move.js";
+import Texture from "./texture.js";
 
 class MapCanvas extends VirtualCanvas{
   constructor({renderer, ...props}){
@@ -44,7 +45,7 @@ export default class Renderer extends VirtualDOM{
     this._dragMode = false;
     this._dragged = false;
     this._eventListeners = {};
-    this._texture = document.getElementById('improvements');
+    this._texture = new Texture(document.getElementById('improvements'));
 
     const length = game.mapSize * PIXEL_PER_GRID;
 
@@ -267,5 +268,90 @@ export default class Renderer extends VirtualDOM{
           key, val.bind(this)
         ])
     );
+  }
+  _drawImage(ctx, tile, type){
+    let {x, y} = tile;
+
+    ctx.drawImage(
+      ...this.texture.getTextureArgs(type),
+      x * PIXEL_PER_GRID, y * PIXEL_PER_GRID,
+      PIXEL_PER_GRID, PIXEL_PER_GRID
+    );
+  }
+  _renderCity(tile){
+    if (tile.city) this._drawImage(this.mapCanvas, tile, 'city');
+  }
+  _renderFarm(tile){
+    const isEven = (tile.x + tile.y) % 2 === 0;
+    this._drawImage(this.mapCanvas, tile, isEven ? 'farm1' : 'farm2');
+  }
+  _renderCamp(tile){
+    if (tile.camp && !tile.city)
+      this._drawImage(this.unitCanvas, tile, 'camp');
+  };
+  _renderFormation(tile){
+    let unit = Array.from(tile.units)[0];
+
+    if (!unit) return;
+
+    const {battleUnits, x, y, campTile, formation, isDenselyFormed} = unit;
+    const legions = battleUnits / 250 | 0;
+    const normalCols = isDenselyFormed ? Math.ceil(legions ** 0.5) : 12;
+    const rows = Math.ceil(legions / normalCols);
+    const residualCols = legions % normalCols;
+    this._x = x * PIXEL_PER_GRID;
+    this._y = y * PIXEL_PER_GRID;
+
+    const imageData = this.unitCanvas.getImageData(
+      this._x, this._y, PIXEL_PER_GRID, PIXEL_PER_GRID
+    );
+    const buffer = new Uint32Array(imageData.data.buffer);
+    const angle = Math.atan2(...formation);
+    const COS = Math.round(Math.cos(angle));
+    const SIN = Math.round(Math.sin(angle));
+    const GAP = (COS !== 0 && SIN !== 0 || isDenselyFormed) ? 2 : 3;
+
+    for (let row = 0; row < rows; row++){
+      let cols = row === (rows - 1) ? (residualCols || normalCols) : normalCols;
+
+      for (let col = 0; col < cols; col++){
+        const px0 = rows * GAP / (isDenselyFormed ? 2 : 1) - (row + 1) * GAP;
+        const py0 = -cols * GAP / 2 + col * GAP;
+        const px = PIXEL_PER_GRID / 2 + Math.round(px0 * COS - py0 * SIN);
+        const py = PIXEL_PER_GRID / 2 + Math.round(px0 * SIN + py0 * COS);
+
+        const index = (px * PIXEL_PER_GRID + py);
+
+        buffer[index] = 255 << 24;
+      }
+    }
+
+    this.unitCanvas.putImageData(imageData, this._x, this._y);
+  }
+
+  _clear({x, y}){
+    window.mapCanvas = this.mapCanvas;
+    this.mapCanvas.clearRect(
+      x * PIXEL_PER_GRID, y * PIXEL_PER_GRID, PIXEL_PER_GRID, PIXEL_PER_GRID
+    );
+    this.unitCanvas.clearRect(
+      x * PIXEL_PER_GRID, y * PIXEL_PER_GRID, PIXEL_PER_GRID, PIXEL_PER_GRID
+    );
+  }
+
+  _renderNature({x, y}){
+    this.mapCanvas.rect({
+      x: x * PIXEL_PER_GRID, y: y * PIXEL_PER_GRID, 
+      width: PIXEL_PER_GRID, height: PIXEL_PER_GRID, fill: "#7f974f"
+    });
+  }
+
+  render(tile){
+    if (!tile) return;
+    this._clear(tile);
+    this._renderNature(tile);
+    this._renderCity(tile);
+    this._renderCamp(tile);
+    this._renderFormation(tile);
   }
 }
