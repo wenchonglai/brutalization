@@ -4,9 +4,59 @@
 Brutalization is a turn-based single player strategy board game that implements the logic of real wars and simulates marching and battles affected by logistics, morality, and formations. A user can compete against computer players, control units to attack enemy units, and eventually win the game by having higher scores or defeating other computer players.
 
 ## Technologies
-- JavaScript (ES2018+) for game logic
+- Redux-style game object states and actions
+  - The game incorporates Redux-style stores and action dispatchers/reducers to control game object states and game events in an ES2018+ fashion.
+    ```js
+    export default class MetaGameObject{
+      constructor({player, tile, state}){
+        this._state = {...state};
+        this._actionQueue = [];
+        this.campTile?.registerCamp(this);
+        this.register({player, tile});
+      }
+      
+      register({player, tile}){
+        tile?.register(this);
+        player?.register(this);
+      }
+
+      deregister(){
+        if (this.game.gameObject === this)
+          this.game.focus(Array.from(this.player._unresolved)[0]);
+
+        this.tile?.deregister(this);
+        this.player?.deregister(this);
+      }
+
+      saveAction(action){ 
+        if (action)
+          this._actionQueue[0] = action;
+      }
+      
+      dispatch(action, callback){
+        if (!action) return;
+
+        this.state = this.actionReducer(action);
+
+        callback?.();
+
+        this.player.update(this);
+      }
+
+      get game(){ return this.player.game; }
+      get state(){ return this._state; }
+      set state(newState){ return this._state = newState; }
+      get tile(){ return this._tile; }
+      get player(){ return this._player; }
+      get playerId(){ return this._player?.id; }
+      get x(){ return this.tile.x; }
+      get y(){ return this.tile.y; }
+      get actionQueue(){ return this._actionQueue; }
+      get action(){ return this.actionQueue[0]; }
+    }
+    ```
 - Classes inheriting self-developed VirtualDOM class for ui
-  - Per the project requirements, libraries such as React and Redux were not allowed. This game incorporates React-Style classes that allows for the creation, manipulation, and removal DOM nodes:
+  - Per the project requirements, libraries such as React and Redux were not allowed. This game incorporated React-Style classes that allows for the creation, manipulation, and removal DOM nodes:
     ```js
     import createComponent from "./easyjs.js";
 

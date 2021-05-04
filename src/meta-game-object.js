@@ -23,6 +23,7 @@ export default class MetaGameObject{
     if (action)
       this._actionQueue[0] = action;
   }
+  
   dispatch(action, callback){
     if (!action) return;
 
