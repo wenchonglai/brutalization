@@ -69,39 +69,51 @@ export default class Game{
 
     let sf = new City({
       player: this.currentPlayer, 
-      tile: Tile.getTile({x: 1, y: 7}), 
+      tile: Tile.getTile({x: 1, y: 4}), 
       population: 500
     });
 
     let ny = new City({
       player: this.currentPlayer,
-      tile: Tile.getTile({x: 14, y: 1}), 
+      tile: Tile.getTile({x: 2, y: 7}), 
+      population: 500
+    });
+
+    let city_0_2 = new City({
+      player: this.currentPlayer,
+      tile: Tile.getTile({x: 1, y: 10}), 
       population: 500
     });
 
     let la = new City({
       player: this.players[1], 
-      tile: Tile.getTile({x: 2, y: 12}), 
+      tile: Tile.getTile({x: 4, y: 1}), 
       population: 500
     });
 
     let lv = new City({
       player: this.players[1], 
-      tile: Tile.getTile({x: 5, y: 10}), 
+      tile: Tile.getTile({x: 7, y: 2}), 
+      population: 500
+    });
+
+    let city_2_10 = new City({
+      player: this.players[1], 
+      tile: Tile.getTile({x: 10, y: 1}), 
       population: 500
     });
 
     new Unit({
       player: this.currentPlayer, 
-      tile: Tile.getTile({x: 0, y: 8}),
+      tile: Tile.getTile({x: 2, y: 3}),
       homeTile: sf.tile,
       population: 2500,
-      formation: [1, 1]
+      formation: [1, -1]
     });
 
     new Unit({
       player: this.currentPlayer,
-      tile: Tile.getTile({x: 3, y: 8}),
+      tile: Tile.getTile({x: 4, y: 4}),
       homeTile: sf.tile,
       population: 5000,
       formation: [1, 0]
@@ -109,14 +121,16 @@ export default class Game{
 
     new Unit({
       player: this.currentPlayer,
-      tile: Tile.getTile({x: 11, y: 2}),
+      tile: Tile.getTile({x: 5, y: 5}),
+      campTile: Tile.getTile({x: 5, y: 6}),
       homeTile: ny.tile,
-      population: 12500
+      population: 12500,
+      formation: [0, -1]
     });
 
     new Unit({
       player: this.players[1],
-      tile: Tile.getTile({x: 2, y: 11}),
+      tile: Tile.getTile({x: 3, y: 2}),
       homeTile: la.tile,
       population: 5000,
       formation: [1, 0]
@@ -127,6 +141,15 @@ export default class Game{
       tile: lv.tile,
       homeTile: lv.tile,
       population: 12500
+    });
+
+    new Unit({
+      player: this.players[1],
+      tile: Tile.getTile({x: 5, y: 4}),
+      campTile: Tile.getTile({x: 6, y: 3}),
+      homeTile: lv.tile,
+      population: 12500,
+      formation: [-1, 1]
     });
 
 

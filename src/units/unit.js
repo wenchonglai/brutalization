@@ -26,6 +26,8 @@ export class Unit extends MetaGameObject{
     this._campTile = campTile;
 
     Object.assign(this.state, this.balanceUnits());
+
+    this.player.update(this);
   }
 
   destruct(){

@@ -11,7 +11,7 @@ export default class UnitRendering extends MetaCanvasRendering{
 
   update(){
     MetaCanvasRendering.prototype.update.call(this);
-    const oldCampTile = this.campTile
+    const oldCampTile = this.campTile;
     const {gameObject} = this;
     this._campTile = gameObject.campTile;
 

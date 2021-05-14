@@ -279,11 +279,14 @@ export default class Renderer extends VirtualDOM{
     );
   }
   _renderCity(tile){
-    if (tile.city) this._drawImage(this.mapCanvas, tile, 'city');
+    if (tile.city) { this._drawImage(this.mapCanvas, tile, 'city'); }
   }
   _renderFarm(tile){
-    const isEven = (tile.x + tile.y) % 2 === 0;
-    this._drawImage(this.mapCanvas, tile, isEven ? 'farm1' : 'farm2');
+    if (tile.improvements.has('farm')){
+      const isEven = (tile.x + tile.y) % 2 === 0;
+      this._drawImage(this.mapCanvas, tile, isEven ? 'farm1' : 'farm2');
+    }
+    
   }
   _renderCamp(tile){
     if (tile.camp && !tile.city)
@@ -350,6 +353,7 @@ export default class Renderer extends VirtualDOM{
     if (!tile) return;
     this._clear(tile);
     this._renderNature(tile);
+    this._renderFarm(tile);
     this._renderCity(tile);
     this._renderCamp(tile);
     this._renderFormation(tile);

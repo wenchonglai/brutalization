@@ -35,7 +35,7 @@ a {
 
 .map > .isometric-wrapper{
   transform-origin: 0% 0%;
-  transform: rotateX(54.735610317245346deg) rotateZ(40deg);
+  transform: rotateX(54.735610317245346deg) rotateZ(45deg);
 }
 
 .isometric-wrapper > :first-child {
