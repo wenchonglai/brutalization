@@ -28,10 +28,10 @@ function handleMouseMoveCreator(mode){
         
         path = mode === 'camp' ? 
             gameObject.getValidCampPath(targetTile) :
-            gameObject.getValidRaidPath(targetTile)
+            gameObject.getValidActionPath(targetTile)
 
         if (path && mode !== 'camp') 
-          mode = path[path.length - 1].hasUnit ? 'attack' : 'raid';
+          mode = path[path.length - 1].hasUnit ? 'attack' : 'action';
 
         if ((path?.length || 0) >= 2){
           let [p1, p2] = path.slice(-2);
@@ -118,9 +118,9 @@ export const campEventListeners = {
   'mouseleave': handleMouseLeave,
 };
 
-export const raidEventListeners = {
-  'mousemove': handleMouseMoveCreator('raid'),
+export const actionEventListeners = {
+  'mousemove': handleMouseMoveCreator('action'),
   'mousedown':  handleMouseDown,
-  'mouseup': handleMouseUpCreator('raid'),
+  'mouseup': handleMouseUpCreator('action'),
   'mouseleave': handleMouseLeave,
 }

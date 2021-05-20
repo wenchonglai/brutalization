@@ -4,7 +4,7 @@ import {PIXEL_PER_GRID} from "../settings/map-settings.js";
 
 const PATHFINDER_COLORS = {
   camp: "#ffffff",
-  raid: "#ffdf00",
+  action: "#ffdf00",
   attack: "#df0000",
 }
 

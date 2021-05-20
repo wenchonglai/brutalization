@@ -161,7 +161,6 @@ function IconButton({id, command, selected, handleClick, handleResolve, moveable
         }`, 
         onClick: moveable ? (e) => {
           handleClick();
-
           const {skipResolve} = command() || {};
           skipResolve || handleResolve();
         } : null
@@ -198,7 +197,7 @@ class DropDownMenu extends VirtualDOM{
         _("p", {}, "- Click on a unit to control its moves"),
         _("p", {}, "- A unit can rest or stay alerted in place to recover from tiredness."),
         _("p", {}, `- A unit can set camp at a different position. After clicking the "camp" button, click on the destination tile you would like the unit to camp at. Drag while clicking to set the desired formation.`),
-        _("p", {}, `- A unit can raid to a different position. After clicking the "raid" button, click on the destination tile you would like the unit to raid. Drag while clicking to set the desired formation. CAVEAT: raiding units are more vulnerable.`),
+        _("p", {}, `- A unit can take military actions. After clicking the "action" button, click on the destination tile you would like the unit to take action. Drag while clicking to set the desired formation. CAVEAT: Units not in their camps lose access to food and are more vulnerable.`),
         _("p", {}, `- Click the "pillage" button to pillage. Pillaging a tile may receive a small amount of food.`),
       )
     );

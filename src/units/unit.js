@@ -100,10 +100,10 @@ export class Unit extends MetaGameObject{
 
           return {skipResolve: true};
         }),
-        raid: moveable && (() => {
-          this.game.changeMapInteraction('raid', {
+        action: moveable && (() => {
+          this.game.changeMapInteraction('action', {
             gameObject: this, 
-            command: (...args) => this.raid.call(this, ...args)
+            command: (...args) => this.action.call(this, ...args)
           });
 
           return {skipResolve: true};
@@ -283,7 +283,7 @@ export class Unit extends MetaGameObject{
 
         return newState;
       }
-      case 'raid': {
+      case 'action': {
         this.register({tile: action.targetTile});
 
         newState.movePoints -= action.costDistance;
@@ -329,7 +329,7 @@ export class Unit extends MetaGameObject{
   // pillage: execute action immediately
   // camp:   cancel if enemy is spotted in the surrounding or destination is reached
   //          else: move to the target tile immediately; next command is still camp until reaching the destination
-  // raid:    cancel if 1) enemy is spotted in the surrounding; 2) destination is reached; or 3) food is barely enough to go back to camptile and destination tile is not camptile
+  // action:    cancel if 1) enemy is spotted in the surrounding; 2) destination is reached; or 3) food is barely enough to go back to camptile and destination tile is not camptile
   //          else: move to the target tile immediately; next command is still camp 
 
   rest(){ 
@@ -353,11 +353,13 @@ export class Unit extends MetaGameObject{
       destinationTile, 
       tile => 
         this.player.accessibleTiles.has(tile) &&
-        (!tile.hasUnit || this.tile === destinationTile )
+        (!tile.camp && !tile.city) &&
+        (!tile.hasUnit || this.tile === destinationTile ) ||
+        tile == this.campTile || tile == this.tile
     )
   }
 
-  getValidRaidPath(destinationTile){
+  getValidActionPath(destinationTile){
     return this.tile.aStarSearch(
       destinationTile, 
       tile => 
@@ -421,7 +423,7 @@ export class Unit extends MetaGameObject{
     });
   }
 
-  raid(destinationTile, formation, path){
+  action(destinationTile, formation, path){
     if (destinationTile === this.tile) return;
 
     path ||= this.tile.aStarSearch(
@@ -473,12 +475,12 @@ export class Unit extends MetaGameObject{
     } else {
       let costDistance = this.tile.getEuclideanCostDistance(targetTile);
 
-      this.dispatch({ type: 'raid',
+      this.dispatch({ type: 'action',
         targetTile,
         costDistance,
         formation: formation,
         pathToClosestHomeCity: this.calculatePathToClosestHomeCity(),
-        nextCommand: { type: 'raid', destinationTile, formation }
+        nextCommand: { type: 'action', destinationTile, formation }
       });
     }
   }

@@ -11,8 +11,9 @@ export default class AIPlayer extends Player{
         // unit.rest();
       } else {
         let path = unit.tile.bfs(tile => tile.hasEnemy(unit), tile => tile);
+        
         if (path)
-          unit.raid(path[path.length - 1], [0, 0]);
+          unit.action(path[path.length - 1], [0, 0]);
       }
     
     this.endTurn();

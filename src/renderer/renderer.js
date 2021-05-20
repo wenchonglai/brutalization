@@ -5,7 +5,7 @@ import SceneObject from "./scene-object.js";
 import MapSVG from "./map-svg.js";
 import {PIXEL_PER_GRID} from "../settings/map-settings.js";
 import {defaultDrag, defaultDragEnd, defaultDragStart, defaultScroll} from "./interactions/default.js"
-import {campEventListeners, raidEventListeners} from "./interactions/move.js";
+import {campEventListeners, actionEventListeners} from "./interactions/move.js";
 import Texture from "./texture.js";
 
 class MapCanvas extends VirtualCanvas{
@@ -184,8 +184,8 @@ export default class Renderer extends VirtualDOM{
       case "camp": 
         eventListeners = this._bindAllListeners(campEventListeners);
         break;
-      case "raid":
-        eventListeners = this._bindAllListeners(raidEventListeners);
+      case "action":
+        eventListeners = this._bindAllListeners(actionEventListeners);
         break;
       default: {
         const handleDragEnd = defaultDragEnd.bind(this);
