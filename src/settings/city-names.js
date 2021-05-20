@@ -1,8 +1,8 @@
 const CITY_NAMES = [
   // ['San Francisco', 'New York', 'Los Angeles'],
   // ['San Fierro', 'Liberty City', 'Los Santos'],
-  ['⭐️OmJiek', 'DaiLiang', 'Jiep', 'QuWo', 'PuBan', 'YinJin', 'WangCheng', 'YuanLi', 'HeYang', 'AnLing', 'HuangChi', 'SuanZao', 'GuiLing'],
-  ['Jung', '⭐️NgjakJang', 'GhromJang', 'Mei', 'Zheng', 'LanTian', 'DiaoYin', 'ShaoLiang', 'Shang', 'Yu', 'Nanzheng'],
+  ['⭐️AnYi', 'DaLiang', 'Ye', 'QuWo', 'PuBan', 'YinJin', 'WangCheng', 'YuanLi', 'HeYang', 'AnLing', 'HuangChi', 'SuanZao', 'GuiLing'],
+  ['Yong', '⭐️YueYang', 'XianYang', 'Mei', 'Zheng', 'LanTian', 'DiaoYin', 'ShaoLiang', 'Shang', 'Yu', 'Nanzheng'],
   ['JINYANG', 'ZHONGMOU', 'HANDAN', 'DAI', 'LISHI', 'LIN', 'YUCI', 'YANYU', 'BOREN', 'JULU', 'WUCHENG', 'GAOLANG'],
   ['PINGYANG', 'YANGDI', 'YIYANG', 'WUSUI', 'YEWANG', 'JINCHENG', 'PILAO', 'LUSHI', 'NANLIANG', 'FUSHU', 'HUAYANG'],
   ['YAN', 'DENG', 'WAN', 'JIANGYING', 'YILING', 'RANG'],

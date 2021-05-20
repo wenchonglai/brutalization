@@ -56,7 +56,7 @@ export default class UI extends VirtualDOM{
       this._gameObject = gameObject;
       this._player = gameObject.player;
     }
-
+    
     this._endable = !this._player._unresolved?.size;
 
     let { information, commands } = this.gameObject.toUserInterface() || {};
@@ -197,7 +197,7 @@ class DropDownMenu extends VirtualDOM{
         "Brutalization is a turn-based single player strategy board game that implements the logic of real wars and simulates marching and battles affected by logistics, morality, and formations. You can compete against computer players, control units to attack enemy units, and eventually win the game by having higher scores or defeating other computer players.",
         _("p", {}, "- Click on a unit to control its moves"),
         _("p", {}, "- A unit can rest or stay alerted in place to recover from tiredness."),
-        _("p", {}, `- A unit can march to a different position. After clicking the "march" button, click on the destination tile you would like the unit to move to. Drag while clicking to set the desired formation.`),
+        _("p", {}, `- A unit can set camp at a different position. After clicking the "camp" button, click on the destination tile you would like the unit to camp at. Drag while clicking to set the desired formation.`),
         _("p", {}, `- A unit can raid to a different position. After clicking the "raid" button, click on the destination tile you would like the unit to raid. Drag while clicking to set the desired formation. CAVEAT: raiding units are more vulnerable.`),
         _("p", {}, `- Click the "pillage" button to pillage. Pillaging a tile may receive a small amount of food.`),
       )

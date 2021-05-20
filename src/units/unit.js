@@ -92,10 +92,10 @@ export class Unit extends MetaGameObject{
       commands: {
         rest: moveable && this.rest.bind(this),
         guard: moveable && this.guard.bind(this),
-        march: moveable && (() => {
-          this.game.changeMapInteraction('march', {
+        camp: moveable && (() => {
+          this.game.changeMapInteraction('camp', {
             gameObject: this, 
-            command: (...args) => this.march.call(this, ...args)
+            command: (...args) => this.camp.call(this, ...args)
           });
 
           return {skipResolve: true};
@@ -252,7 +252,7 @@ export class Unit extends MetaGameObject{
         newState.experience += Math.random() / 8;
         return {...newState, formation: action.formation};
       }
-      case 'march': {
+      case 'camp': {
         this.register({tile: action.targetTile});
         
         newState.movePoints -= action.costDistance;
@@ -327,10 +327,10 @@ export class Unit extends MetaGameObject{
   //          cannot rest if camp tile is not current tile
   // guard:   add action to action queue; next command is still guard; clear action queue if no food or enemy is spotted
   // pillage: execute action immediately
-  // march:   cancel if enemy is spotted in the surrounding or destination is reached
-  //          else: move to the target tile immediately; next command is still march until reaching the destination
+  // camp:   cancel if enemy is spotted in the surrounding or destination is reached
+  //          else: move to the target tile immediately; next command is still camp until reaching the destination
   // raid:    cancel if 1) enemy is spotted in the surrounding; 2) destination is reached; or 3) food is barely enough to go back to camptile and destination tile is not camptile
-  //          else: move to the target tile immediately; next command is still march 
+  //          else: move to the target tile immediately; next command is still camp 
 
   rest(){ 
     this.saveAction({
@@ -346,7 +346,7 @@ export class Unit extends MetaGameObject{
     });
   }
 
-  getValidMarchPath(destinationTile){
+  getValidCampPath(destinationTile){
     this.player.updateAccessibleTiles();
 
     return this.tile.aStarSearch(
@@ -365,12 +365,12 @@ export class Unit extends MetaGameObject{
     )
   }
 
-  march(destinationTile, formation, path){
+  camp(destinationTile, formation, path){
 
     const pathToClosestHomeCity = this.calculatePathToClosestHomeCity;
 
     if (destinationTile === this.tile) {
-      this.dispatch({ type: 'march', 
+      this.dispatch({ type: 'camp', 
         targetTile: destinationTile,
         costDistance: 1,
         pathToClosestHomeCity: pathToClosestHomeCity,
@@ -389,13 +389,13 @@ export class Unit extends MetaGameObject{
     if (!targetTile.hasUnit){
       let costDistance = this.tile.getEuclideanCostDistance(targetTile);
 
-      this.dispatch({ type: 'march', targetTile,
+      this.dispatch({ type: 'camp', targetTile,
         costDistance,
         pathToClosestHomeCity: pathToClosestHomeCity,
         formation: targetTile === destinationTile ? 
           formation :
           this.getNaturalFormation(targetTile),
-        nextCommand: { type: 'march', destinationTile, formation }
+        nextCommand: { type: 'camp', destinationTile, formation }
       });
     }
   }

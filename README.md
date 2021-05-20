@@ -180,14 +180,14 @@ Brutalization is a turn-based single player strategy board game that implements 
 - MVP #2
   - Hunger, tiredness, morality, formation, and experience altogether affect the overall military might of a unit.
   - The probability of winning relies on the relative military mights of the two opposing units in a battle.
-  - A unit gains experience by marching (minimally) or enter into a battle.
+  - A unit gains experience by marching/camping (minimally) or enter into a battle.
 - MVP #3
   - The game has a splash page with a "start game" button, as well as the main game page. The game board is visualized in an isometric view with each unit represented by a pin-like icon.
   - A user can control a unit using either mouse gestures or menu buttons.
   - The approximate information of a user-controlled unit will be indicated. The data of a computer-controlled unit or the exact data of a user-controlled unit will NOT be revealed.
 - MVP #4
   - The computer player incorporates a bare minimum of AI and controls units. 
-  - A computer-controlled unit can march/attack targeting a user unit.
+  - A computer-controlled unit can march/set camp or attack targeting a user unit.
   - A computer-controlled unit can recalculate the path and goals every turn.
 
 ## Timeline

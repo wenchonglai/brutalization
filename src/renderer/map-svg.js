@@ -3,7 +3,7 @@ import createComponent from "../util/easyjs.js";
 import {PIXEL_PER_GRID} from "../settings/map-settings.js";
 
 const PATHFINDER_COLORS = {
-  march: "#ffffff",
+  camp: "#ffffff",
   raid: "#ffdf00",
   attack: "#df0000",
 }
@@ -75,7 +75,7 @@ class GridLayer extends VirtualDOM{
   moveGrid({x, y}){
     this._move(this.highlightedGrid, {x, y});
   }
-  _moveDestinationIndicator({x, y}, path, mode="march"){
+  _moveDestinationIndicator({x, y}, path, mode="camp"){
     let rotateString = this.destinationIndicator.getAttribute('transform')
       .replace(/translate\([^\(^\)]*\)\s*/g, '');
 
@@ -112,7 +112,7 @@ class GridLayer extends VirtualDOM{
       );
     }
   }
-  updatePathfinder(pos, path, mode = "march"){
+  updatePathfinder(pos, path, mode = "camp"){
     this._moveDestinationIndicator(pos, path, mode);
 
     if (!path || path.length < 2){
@@ -180,7 +180,7 @@ export default class MapSVG extends VirtualDOM{
   // }
 
   resetPathFinder(pos, path, mode){
-    this.gridLayer.updatePathfinder({x: -1, y: -1}, undefined, 'march')
+    this.gridLayer.updatePathfinder({x: -1, y: -1}, undefined, 'camp')
   }
 
   updatePathfinder(pos, path, mode){

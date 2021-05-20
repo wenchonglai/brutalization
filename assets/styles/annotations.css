@@ -1,0 +1,119 @@
+div.annotation{
+  position: absolute;
+  height: 36px;
+  border-radius: 18px;
+  background-color: #cfcfcf;
+  user-select: none;
+  transform-origin: 50% 44px;
+  transform: translate(-50%, -60px) scale(0.8);
+  text-align: center;
+  font-size: 22px;
+  line-height: 36px;
+  cursor: pointer;
+  box-sizing: border-box;
+  border: 2px solid #bfbfbf;
+  box-shadow: 1px 1px 0 0 #000000;
+  opacity: 0.8;
+}
+
+div.unit-annotation{
+  width: 36px;
+  transform: translate(-50%, -50px) scale(0.8);
+}
+
+div.city-annotation{
+  min-width: 36px;
+  width: max-content;
+  padding: 0 8px;
+  font-size: 20px;
+}
+
+div.unit-annotation::after{
+  content: "";
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: inherit;
+  user-select: none;
+  left: 50%;
+  top: 50%;
+  transform-origin: 50% 50%;
+  transform: translate(-50%, -50%) scale(0.8, 0.35);
+  z-index: -2 ;
+}
+
+div.unit-annotation::before{
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 3.6px) rotate(45deg);
+  transform-origin: 50% 50%;
+  background-color: inherit;
+  z-index: -1;
+  box-sizing: border-box;
+  border: 2px solid;
+  border-top: none;
+  border-left: none;
+  border-color: inherit;
+  box-shadow: 1.4px 0px 0 -0.1px #000000;
+}
+
+div.annotation:hover, div.unit-annotation:hover::before{
+  border-color: #dfdfdf;
+}
+
+div.annotation-wrapper.active > div.annotation,
+div.annotation-wrapper.active > div.unit-annotation::before{
+  border-color: #ffffff;
+  border-width: 3px;
+}
+
+div.annotation-wrapper.active > div.annotation {
+  opacity: 1;
+  z-index: 9999 !important;
+}
+
+div.annotation-wrapper.active > div.unit-annotation {
+  transform: translate(-50%, -50px);
+}
+
+div.annotation-wrapper.active > div.unit-annotation::after{
+  box-shadow: 0px 92px 16px 16px #ffefbf1f;
+}
+
+div .unit-annotation div.overlapping-emoji > *{
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%);
+  text-shadow: 0 0 3px #0000003f;
+}
+
+div .unit-annotation div.overlapping-emoji > :last-child{
+  transform: translate(-45%);
+}
+
+div .unit-annotation div.casualty-indicator {
+  position: absolute;
+  top: -30px;
+  width: 100%;
+  text-align: center;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 1.2rem;
+  color: #cf0000;
+  text-shadow: 0 0 6px #ffffff9f;
+  font-weight: 600;
+  opacity: 0;
+  opacity: 0;
+  transform: translateY(-300px);
+  transition: opacity cubic-bezier(1.0, 0, 1.0, 1.0) 0.5s, transform cubic-bezier(0.5, 0, 1.0, 1.0) 0.5s;
+}
+
+div .unit-annotation div.casualty-indicator.trigger {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity cubic-bezier(0, 0, 0.1, 1.0) 0.25s, transform 0s;
+}

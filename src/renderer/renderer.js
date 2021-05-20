@@ -1,10 +1,11 @@
 import createComponent from "../util/easyjs.js";
 import VirtualDOM, { VirtualCanvas } from "../util/virtual-dom.js";
-import {screenToGrid, mapToScreen} from "../util/coordinate-converter.js";
+import {mapToScreen} from "../util/coordinate-converter.js";
 import SceneObject from "./scene-object.js";
 import MapSVG from "./map-svg.js";
-import {PIXEL_PER_GRID, MIN_ZOOM, MAX_ZOOM} from "../settings/map-settings.js";
-import {marchEventListeners, raidEventListeners} from "./interactions/move.js";
+import {PIXEL_PER_GRID} from "../settings/map-settings.js";
+import {defaultDrag, defaultDragEnd, defaultDragStart, defaultScroll} from "./interactions/default.js"
+import {campEventListeners, raidEventListeners} from "./interactions/move.js";
 import Texture from "./texture.js";
 
 class MapCanvas extends VirtualCanvas{
@@ -123,65 +124,6 @@ export default class Renderer extends VirtualDOM{
     }
   }
 
-  defaultDragStart(e){
-    this._dragMode = true;
-    this._dragStartXY = {x: e.x, y: e.y};
-  }
-  defaultDragEnd(e){
-    if (!this._dragMode) return;
-
-    if (!this._dragged) {};
-    
-    const {x, y, zoom} = this._transformAttributes;
-    const dx = e.x - this._dragStartXY.x;
-    const dy = e.y - this._dragStartXY.y;
-
-    this._dragStartXY = {};
-    this._dragMode = false;
-    this._dragged = false;
-
-    this._transformAttributes = { x: x + dx, y: y + dy, zoom};
-    this.transform(this._transformAttributes, false);
-  }
-  defaultDrag(e){
-    if (!this._dragMode){
-      let {x, y} = screenToGrid(e, {
-        translateX: this._transformAttributes?.x || 0,
-        translateY: this._transformAttributes?.y || 0,
-        zoom: this._transformAttributes?.zoom || 1
-      });
-
-      if (
-        x !== this._highlightedGridXY.x || 
-        y !== this._highlightedGridXY.y
-      ) {
-        this._highlightedGridXY = {x, y};
-      }
-      return;
-    };
-
-    const {x, y, zoom} = this._transformAttributes;
-    const dx = e.x - this._dragStartXY.x;
-    const dy = e.y - this._dragStartXY.y;
-
-    if (dx !== 0 || dy !== 0) this._dragged = true;
-
-    this._animationFrame = requestAnimationFrame( () => 
-      this.transform({x: x + dx, y: y + dy, zoom}, false)
-    );
-  }
-
-  defaultScroll(e){
-    const {x, y, zoom} = this._transformAttributes;
-    const newZoom = Math.min(Math.max(MIN_ZOOM, zoom - e.deltaY / 64), MAX_ZOOM);
-
-    this.transform({
-      x: x * newZoom / zoom - e.x * (newZoom / zoom - 1),
-      y: y * newZoom / zoom - e.y * (newZoom / zoom - 1),
-      zoom: newZoom
-    });
-  }
-
   transform({x, y, zoom}, updateTransformAttributes = true){ 
     cancelAnimationFrame(this._animationFrame);
 
@@ -197,8 +139,8 @@ export default class Renderer extends VirtualDOM{
     });
   }
 
-  update(gameObject){
-    SceneObject.getSceneObject(gameObject).update();
+  update(gameObject, action){
+    SceneObject.getSceneObject(gameObject).update(action);
   }
   addToScene(gameObject){
     let sceneObject = new SceneObject({renderer: this, gameObject});
@@ -239,20 +181,20 @@ export default class Renderer extends VirtualDOM{
     this._command = command;
 
     switch (mode){
-      case "march": 
-        eventListeners = this._bindAllListeners(marchEventListeners);
+      case "camp": 
+        eventListeners = this._bindAllListeners(campEventListeners);
         break;
       case "raid":
         eventListeners = this._bindAllListeners(raidEventListeners);
         break;
       default: {
-        const handleDragEnd = this.defaultDragEnd.bind(this);
+        const handleDragEnd = defaultDragEnd.bind(this);
         eventListeners = {
-          mousemove: this.defaultDrag.bind(this),
-          mousedown: this.defaultDragStart.bind(this),
-          mouseup:   handleDragEnd,
-          mouseleave:  handleDragEnd,
-          wheel:     this.defaultScroll.bind(this)
+          mousemove:  defaultDrag.bind(this),
+          mousedown:  defaultDragStart.bind(this),
+          mouseup:    handleDragEnd,
+          mouseleave: handleDragEnd,
+          wheel:      defaultScroll.bind(this)
         }; 
       }; break;
     }

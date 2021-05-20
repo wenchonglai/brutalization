@@ -49,9 +49,9 @@ export default class SceneObject{
   get canvasAlias(){ return this._canvasAlias; }
   get gameObject(){ return this._gameObject; }
 
-  update(){
-    this.virtualDom?.update();
-    this.canvasAlias?.update();
+  update(action){
+    this.virtualDom?.update(action);
+    this.canvasAlias?.update(action);
   }
 
   destruct(){

@@ -8,9 +8,9 @@ import { City } from "./tiles/city.js";
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'DECEMBER'];
 const PLAYER_COLORS = [
-  '#4f9fbf',
-  '#ff5f8f',
-  '#00bf00',
+  '#32a8ff',
+  '#ff9a01',
+  '#ff3266',
   '#9f7fff',
 ];
 
@@ -195,9 +195,9 @@ export default class Game{
     this.renderer.focus(gameObject);
   }
 
-  update(gameObject){
+  update(gameObject, action){
     gameObject.player instanceof HumanPlayer ?? this.ui.update(gameObject);
-    this.renderer.update(gameObject);
+    this.renderer.update(gameObject, action);
   };
 
   addToScene(gameObject){ this.renderer.addToScene(gameObject); }

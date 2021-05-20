@@ -1,17 +1,22 @@
 import { mapToScreen } from "../../util/coordinate-converter.js";
+import createComponent from "../../util/easyjs.js";
 import VirtualDOM from "../../util/virtual-dom.js";
 
 export default class MetaAnnotation extends VirtualDOM{
   constructor({gameObject, className, isOpaque}, ...children){
     super('div', {
-      className: `annotation${className ? ` ${className}` : ''}`,
-      style: {
-        backgroundColor: gameObject.player.color + (isOpaque ? 'bf' : '')
-      },
-      onClick: (e) => {
-        gameObject.player.focus(gameObject);
-      },
-    }, ...children);
+      className: 'annotation-wrapper',
+    }, 
+      createComponent('div', {
+        className: `annotation${className ? ` ${className}` : ''}`,
+        style: {
+          backgroundColor: gameObject.player.color + (isOpaque ? 'bf' : '')
+        },
+        onClick: (e) => {
+          gameObject.player.focus(gameObject);
+        },
+      }, ...children)
+    );
 
     this._gameObject = gameObject;
 
@@ -29,7 +34,9 @@ export default class MetaAnnotation extends VirtualDOM{
     const y = this.gameObject.y + 0.5;
     const screenXY = mapToScreen({x, y});
 
-    this._dom.style.left = screenXY.x;
-    this._dom.style.top = screenXY.y;
+    this._dom.style.transform = `translate(${screenXY.x}px, ${screenXY.y}px)`;
+    this._dom.style.transition = `transform 0.25s`;
+    // this._dom.style.left = screenXY.x;
+    // this._dom.style.top = screenXY.y;
   }
 }

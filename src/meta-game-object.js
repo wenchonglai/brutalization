@@ -31,7 +31,7 @@ export default class MetaGameObject{
 
     callback?.();
 
-    this.player.update(this);
+    this.player.update(this, action);
   }
 
   get game(){ return this.player.game; }

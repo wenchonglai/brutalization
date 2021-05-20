@@ -65,7 +65,6 @@ export default class Player{
   
   activate(){
     this._isTurn = true;
-
     return this.promptAction(this.findIdleUnits());
   }
 
@@ -85,8 +84,8 @@ export default class Player{
     // this.game.update(gameObject);
   }
 
-  update(gameObject){
-    this.game.update(gameObject);
+  update(gameObject, action){
+    this.game.update(gameObject, action);
     this.updateAccessibleTiles();
   }
   
