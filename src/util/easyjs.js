@@ -114,7 +114,11 @@ export default function createComponent(tagName, allProps = {}, ..._children){
 
   // add className
   if (className)
-    htmlElement.className = className;
+    try {
+      htmlElement.className = className;
+    } catch (e){
+      htmlElement.className.baseVal = className;
+    }
   
   for (let [key, value] of Object.entries(style))
     htmlElement.style[key] = typeof value === 'number' ? `${value}px` : value;

@@ -46,7 +46,8 @@ export class Unit extends MetaGameObject{
   }
   
   get originalState(){ return this._originalState; }
-  get homeTile(){ return this._homeTile; }
+  get cityTile(){ return this._cityTile; }
+  get cityTile(){ return this._cityTile; }
   get campTile(){ return this.state.campTile; }
   get battleUnits(){ return this.state.battleUnits; }
   get logisticUnits(){ return this.state.logisticUnits; }
@@ -116,16 +117,25 @@ export class Unit extends MetaGameObject{
 
   // calculation formula
   calculatePandemicPossibility(){
-    const dx = this.x - this.homeTile.x;
-    const dy = this.y - this.homeTile.y;
+    const dx = this.x - this.cityTile.x;
+    const dy = this.y - this.cityTile.y;
 
     return ((1 + ( dx ** 2 ) * 0.5 + dy ** 2 ) ** 0.5 / 32 ) * 
       (this.overallWearinessLevel ** 0.5);
   }
 
-  calculatePathToClosestHomeCity(targetTile = this.tile){
-    return targetTile.bfs(
+  calculatePathToClosestHomeCity(sourceTile = this.tile){
+    return sourceTile.bfs(
       tile => tile.city, //&& tile.city.totalFoodStorage > 0,
+      tile => !tile.hasEnemy(this)
+    );
+  }
+  calculatePathToClosestHomeCityFromCamp(){
+    return this.calculatePathToClosestHomeCity(this.campTile);
+  }
+  calculatePathToCamp(sourceTile = this.tile){
+    return sourceTile.bfs(
+      tile => tile === this.campTile,
       tile => !tile.hasEnemy(this)
     );
   }
@@ -209,11 +219,7 @@ export class Unit extends MetaGameObject{
 
   balanceUnits(){
     if (this.campTile === this.tile){
-      let costDistance = this.campTile.costDistanceTo(
-        this.homeTile,
-        tile => !tile.hasEnemy(this)
-      );
-
+      const costDistance = this.calculatePathToClosestHomeCityFromCamp();
       const population = this.population;
       const battleUnits = population * (15 - costDistance) / 15 | 0;
       const logisticUnits = population - battleUnits;
@@ -353,7 +359,7 @@ export class Unit extends MetaGameObject{
       destinationTile, 
       tile => 
         this.player.accessibleTiles.has(tile) &&
-        (!tile.camp && !tile.city) &&
+        (!tile.camp && !(tile.city && tile.city.player !== this.player) ) &&
         (!tile.hasUnit || this.tile === destinationTile ) ||
         tile == this.campTile || tile == this.tile
     )
@@ -368,8 +374,7 @@ export class Unit extends MetaGameObject{
   }
 
   camp(destinationTile, formation, path){
-
-    const pathToClosestHomeCity = this.calculatePathToClosestHomeCity;
+    const pathToClosestHomeCity = this.calculatePathToClosestHomeCity();
 
     if (destinationTile === this.tile) {
       this.dispatch({ type: 'camp', 
