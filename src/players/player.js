@@ -92,9 +92,8 @@ export default class Player{
   endTurn(){
     this._isTurn = false;
 
-    for (let unit of this.units){
+    for (let unit of this.units)
       unit.endTurn();
-    }
 
     this.deactivate();
     this.game.nextTurn();
