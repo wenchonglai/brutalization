@@ -18,14 +18,15 @@ export default class SceneObject{
   }
   static focus(gameObject){
     SceneObject.sceneObjects.forEach((sceneObj, gameObj) => {
-
       if (gameObj === gameObject) sceneObj.focus();
       else sceneObj.blur();
-    })
+    });
   }
 
   constructor({renderer, gameObject}){
     this._gameObject = gameObject;
+    this._focused = false;
+    this._renderer = renderer;
     
     if (gameObject instanceof Unit){
       this._virtualDom = new UnitAnnotation(gameObject);
@@ -44,6 +45,9 @@ export default class SceneObject{
     SceneObject.sceneObjects.set(gameObject, this);
   }
 
+  get renderer(){ return this._renderer; }
+  get focused(){ return this._focused; }
+  get mapSVG(){ return this.renderer.mapSVG; }
   get virtualDom(){ return this._virtualDom; }
   get virtualSVG(){ return this._virtualSVG; }
   get canvasAlias(){ return this._canvasAlias; }
@@ -60,9 +64,18 @@ export default class SceneObject{
   }
 
   focus(){
+    if (this.focused) return;
+
+    this._focused = true;
     this.virtualDom?.addClass('active');
+
+    this.gameObject instanceof Unit &&
+      this.mapSVG.updateUnitIndicators(this.gameObject);
   }
   blur(){
+    if (!this.focused) return;
+
+    this._focused = false;
     this.virtualDom?.removeClass('active');
   }
 } 

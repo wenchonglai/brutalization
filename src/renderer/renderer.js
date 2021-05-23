@@ -165,7 +165,6 @@ export default class Renderer extends VirtualDOM{
       const zoom = this._transformAttributes?.zoom ?? 1;
 
       this.mapSVG.reset();
-
       this.transform({
         x: (window.innerWidth >> 1) + 128 - x * zoom,
         y: (window.innerHeight >> 1) - y * zoom,

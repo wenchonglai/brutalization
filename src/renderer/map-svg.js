@@ -43,4 +43,8 @@ export default class MapSVG extends VirtualDOM{
     this.updatePathfinder({x: -1, y: -1});
     this.setFormation(0, 0);
   }
+
+  updateUnitIndicators(unit){
+    this.pathLayer.updateUnitIndicators(unit);
+  }
 }

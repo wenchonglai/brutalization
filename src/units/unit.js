@@ -258,7 +258,6 @@ export class Unit extends MetaGameObject{
     
     this.state.movePoints = Math.min(1, this.movePoints + 2);
     this._refreshPaths();
-    console.log(this);
   }
 
   getValidCampPath(destinationTile){
