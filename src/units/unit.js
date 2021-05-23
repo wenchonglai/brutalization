@@ -41,7 +41,11 @@ export class Unit extends MetaGameObject{
   }
 
   dispatch(action){
-    MetaGameObject.prototype.dispatch.call(this, action, this.balanceUnits.bind(this));
+    MetaGameObject.prototype.dispatch.call(this, action, () => {
+      this.balanceUnits.bind(this);
+      if (['camp', 'action'].includes(action.type))
+        this._refreshPaths();
+    });
   }
   
   get originalState(){ return this._originalState; }
@@ -143,8 +147,8 @@ export class Unit extends MetaGameObject{
     return this.calculatePathToClosestHomeCity(this.campTile);
   }
   calculatePathToCamp(sourceTile = this.tile){
-    return sourceTile.bfs(
-      tile => tile === this.campTile,
+    return sourceTile.aStarSearch(
+      this.campTile,
       tile => !tile.hasEnemy(this)
     );
   }

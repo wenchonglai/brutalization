@@ -223,13 +223,24 @@ div.dropdown-modal.active .dropdown-menu {
 }
 
 div.dropdown-modal .dropdown-item {
-  padding: 8px;
   background-color: #776f57;
   cursor: pointer;
+  position: relative;
 }
 
 div.dropdown-modal .dropdown-item:hover {
   background-color: #f3a25a;
+}
+
+div.dropdown-modal .dropdown-item:active {
+  background-color: #f39848;
+}
+
+
+div.dropdown-modal .dropdown-item > * {
+  padding: 8px;
+  width: 100%;
+  display: block;
 }
 
 div.dropdown-modal .help-window{

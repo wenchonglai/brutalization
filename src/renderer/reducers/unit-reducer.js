@@ -48,7 +48,9 @@ export default function unitActionReducer(state, action){
         newState.morality -= 0.125 * action.costDistance * this.overallWearinessLevel;
         this.registerCamp(action.targetTile);
 
-        return {
+      this._refreshPaths();
+
+      return {
         ...newState, 
         campTile: action.targetTile,
         formation: action.formation

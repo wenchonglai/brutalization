@@ -1,4 +1,3 @@
-import VirtualDOM from "../../util/virtual-dom.js";
 import createComponent from "../../util/easyjs.js";
 import {PIXEL_PER_GRID} from "../../settings/map-settings.js";
 import MetaLayer from "./meta-layer.js";
@@ -39,5 +38,5 @@ export default class GridLayer extends MetaLayer{
 
   get highlightedGrid(){ return this._highlightedGrid; }
 
-  moveGrid({x, y}){ this._move(this.highlightedGrid, {x, y}); }
+  moveGrid({x, y}){ this.setAttributes(this.highlightedGrid, {x, y}); }
 }

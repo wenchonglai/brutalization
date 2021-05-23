@@ -185,9 +185,15 @@ class DropDownMenu extends VirtualDOM{
     }, _("i", {className: "fas fa-cog"}));
 
     this._menu = _("ul", {className: "dropdown-menu"},
-      _("li", {className: "dropdown-item", onClick: () => this.showHelp()}, "How to play this game"),
-      _("li", {className: "dropdown-item", onClick: () => this.redirectToRepo()}, "About this game"),
-      _("li", {className: "dropdown-item", onClick: () => this.redirectToLinkedIn()}, "About Wenchong Lai")
+      _("li", {className: "dropdown-item", onClick: () => this.showHelp()}, 
+        _("div", {}, "How to play this game")
+      ),
+      _("li", {className: "dropdown-item"}, 
+        _("a", {target: "_blank", href: "https://github.com/wenchonglai/brutalization"}, "About this game")
+      ),
+      _("li", {className: "dropdown-item"},
+        _("a", {target: "_blank", href: "https://www.linkedin.com/in/wenchong-lai-4296424b/"}, "Author")
+      )
     );
 
     this._helpWindow = _("div", {className: "help-window"}, 
@@ -219,15 +225,5 @@ class DropDownMenu extends VirtualDOM{
 
   showHelp(){
     this._helpWindow.classList.add("active");
-  }
-
-  redirectToRepo(){
-    this._helpWindow.classList.remove("active");
-    window.location.href = "https://github.com/wenchonglai/brutalization";
-  }
-
-  redirectToLinkedIn(){
-    this._helpWindow.classList.remove("active");
-    window.location.href = "https://www.linkedin.com/in/wenchong-lai-4296424b/";
   }
 }

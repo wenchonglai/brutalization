@@ -56,6 +56,10 @@ export default class SceneObject{
   update(action){
     this.virtualDom?.update(action);
     this.canvasAlias?.update(action);
+
+    this.focused &&
+    this.gameObject instanceof Unit &&
+      this.mapSVG.updateUnitIndicators(this.gameObject);
   }
 
   destruct(){

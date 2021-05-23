@@ -7,7 +7,7 @@ export default class MetaLayer extends VirtualDOM{
     super(tagName, {className: `layer${className ? ` ${className}` : ''}`});
   }
 
-  _move(obj, props){
+  setAttributes(obj, props){
     for (let [key, val] of Object.entries(props))
       obj.setAttribute(key, val);
   };

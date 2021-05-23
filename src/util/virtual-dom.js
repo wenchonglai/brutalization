@@ -1,4 +1,5 @@
 import createComponent from "./easyjs.js";
+import {PIXEL_PER_GRID} from "../settings/map-settings.js";
 
 export default class VirtualDOM{
   constructor(tagname, props, ...children){
@@ -57,6 +58,8 @@ export default class VirtualDOM{
   toggleClass(value){ this._dom.classList.toggle(value); }
   addClass(value){ this._dom.classList.add(value); }
   removeClass(value){ this._dom.classList.remove(value); }
+  getAttribute(...args){ return this._dom.getAttribute(...args); }
+  setAttribute(...args){ return this._dom.setAttribute(...args); }
 }
 
 export class VirtualCanvas extends VirtualDOM{
@@ -108,4 +111,53 @@ export class VirtualCanvas extends VirtualDOM{
   getImageData(...args){ return this.ctx.getImageData(...args); }
   putImageData(...args){ return this.ctx.putImageData(...args); }
   drawImage(...args){ return this.ctx.drawImage(...args); }
+}
+
+export class SVGPath extends VirtualDOM{
+  constructor({includeOrigin = true, ...args} = {}, ...children){
+    super('path', {...args}, ...children);
+    this._includeOrigin = includeOrigin;
+  }
+  get includeOrigin(){ return this._includeOrigin; }
+  setPath(path, callback){
+    if (!path || path.length < 2){
+      this.setAttribute("d", "");
+      return;
+    }
+
+    let length = path.length;
+    let pathArr = path.map(({x, y}) => ({
+      x: (x + 0.5)* PIXEL_PER_GRID | 0, 
+      y: (y + 0.5) * PIXEL_PER_GRID | 0
+    }));
+
+    const stringArr = pathArr.map(({x, y}, i) => {
+      if (i === 0){
+        return `M ${x} ${y} Q ${x} ${y}`
+      } else {
+        let lastXY = pathArr[i - 1];
+        const _x = x + lastXY.x >> 1;
+        const _y = y + lastXY.y >> 1;
+
+        if (i === length - 1){
+          const xDiff = x > _x ? 1 : x === _x ? 0 : -1;
+          const yDiff = y > _y ? 1 : y === _y ? 0 : -1;
+          const coefficient = 1 / ((xDiff ** 2 + yDiff ** 2) ** 0.5);
+          const ratio = this.includeOrigin ? 0 : PIXEL_PER_GRID / 2;
+
+          x -= xDiff * ratio * coefficient;
+          y -= yDiff * ratio * coefficient;
+
+          x |= 0;
+          y |= 0;
+        }
+
+        return `${_x} ${_y} Q ${x} ${y}${i === length - 1 ? ` ${x} ${y}` : ''}`
+      }
+    });
+    const pathString = stringArr.join(' ');
+
+    this.setAttribute("d", pathString);
+    callback?.call(this);
+  }
 }
