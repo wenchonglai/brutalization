@@ -16,8 +16,7 @@ export class Unit extends MetaGameObject{
       totalFoodLoad: population * 5, 
       morality: 0, pandemicStage: 0,
       formation,
-      movePoints: 0,
-      pathToClosestHomeCity: []
+      movePoints: 0
     }});
     
     this._originalState = Object.freeze({ tile, population });
@@ -147,8 +146,15 @@ export class Unit extends MetaGameObject{
     return this.calculatePathToClosestHomeCity(this.campTile);
   }
   calculatePathToCamp(sourceTile = this.tile){
+    return this.campTile.aStarSearch(
+      sourceTile,
+      tile => !tile.hasEnemy(this)
+    );
+  }
+  calculatePathToDestination(sourceTile = this.tile){
+    const destinationTile = this.state.nextCommand?.destinationTile || this.tile;
     return sourceTile.aStarSearch(
-      this.campTile,
+      destinationTile,
       tile => !tile.hasEnemy(this)
     );
   }
@@ -249,7 +255,7 @@ export class Unit extends MetaGameObject{
   _refreshPaths(){
     this._pathToClosestHomeCityFromCamp = this.calculatePathToClosestHomeCityFromCamp();
     this._pathToCamp = this.calculatePathToCamp();
-    this._pathToDestination = undefined;
+    this._pathToDestination = this.calculatePathToDestination();
   }
 
   endTurn(){

@@ -114,30 +114,64 @@ export class VirtualCanvas extends VirtualDOM{
 }
 
 export class SVGPath extends VirtualDOM{
-  constructor({includeOrigin = true, ...args} = {}, ...children){
-    super('path', {...args}, ...children);
+  constructor({includeOrigin = true, bezier = true, color, arrow = false, ...args} = {}, ...children){
+    const path = createComponent('path', {stroke: color, fill: "none", ...args});
+    const nodes = createComponent('g', {stroke: "none", fill: color, ...args, "stroke-dasharray": "none"});
+
+    super('g', {}, path);
+
+    this._path = path;
+    this._nodes = nodes;
+    this._color = color;
     this._includeOrigin = includeOrigin;
+    this._bezier = bezier;
+    this._arrow = arrow;
+
+    bezier || this.append(nodes);
   }
+  get path(){ return this._path; }
+  get nodes(){ return this._nodes; }
+  get color(){ return this._color; }
   get includeOrigin(){ return this._includeOrigin; }
+  get bezier(){ return this._bezier; }
+  get arrow(){ return this._arrow; }
+  
   setPath(path, callback){
+    this.nodes.innerHTML = '';
+
     if (!path || path.length < 2){
-      this.setAttribute("d", "");
+      this.path.setAttribute("d", "");
       return;
     }
 
-    let length = path.length;
-    let pathArr = path.map(({x, y}) => ({
+    const length = path.length;
+    const pathArr = path.map(({x, y}) => ({
       x: (x + 0.5)* PIXEL_PER_GRID | 0, 
       y: (y + 0.5) * PIXEL_PER_GRID | 0
-    }));
+    }));  
+    const pathCommand = this.bezier ? 'Q' : 'L';
 
     const stringArr = pathArr.map(({x, y}, i) => {
+      if (!this.bezier) 
+        this.nodes.append(createComponent('circle', {cx: x, cy: y, r: 3}));
+
       if (i === 0){
-        return `M ${x} ${y} Q ${x} ${y}`
+        return `M ${x} ${y} ${pathCommand} ${x} ${y}`
       } else {
         let lastXY = pathArr[i - 1];
         const _x = x + lastXY.x >> 1;
         const _y = y + lastXY.y >> 1;
+        const dx = x - lastXY.x;
+        const dy = y - lastXY.y;
+        const angle = Math.atan2(-dx, dy) * 180 / Math.PI;
+
+        this.arrow && this.nodes.append(
+          createComponent('path', {
+            d: `M -5 -5 L 0 0 L 5 -5`,
+            transform: `translate(${_x}, ${_y}) rotate(${angle})`,
+            fill: "none", stroke: this.color, 'stroke-width': 2
+          })
+        );
 
         if (i === length - 1){
           const xDiff = x > _x ? 1 : x === _x ? 0 : -1;
@@ -152,12 +186,20 @@ export class SVGPath extends VirtualDOM{
           y |= 0;
         }
 
-        return `${_x} ${_y} Q ${x} ${y}${i === length - 1 ? ` ${x} ${y}` : ''}`
+        return `${_x} ${_y} ${pathCommand} ${x} ${y}${i === length - 1 ? ` ${x} ${y}` : ''}`
       }
     });
     const pathString = stringArr.join(' ');
 
-    this.setAttribute("d", pathString);
+    this.path.setAttribute("d", pathString);
     callback?.call(this);
+  }
+
+  setAttribute(key, val){
+    if (key === 'color'){
+      this.path.setAttribute('stroke', val);
+    } else {
+      VirtualDOM.prototype.setAttribute.call(this, key, val);
+    }
   }
 }

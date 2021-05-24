@@ -30,25 +30,30 @@ export default class PathLayer extends MetaLayer{
     });
 
     this._pathFinder = new SVGPath({
-      stroke: "#ffffff", fill: "none", 
+      color: "#ffffff",
       "stroke-width": 6, d: "",
       "stroke-dasharray": "3 3",
       includeOrigin: false
     });
 
     this._logisticsIndicator = new SVGPath({
-      stroke: "#03ff9e", fill: "none",
+      color: "#03ff9ebf",
       "stroke-width": 1, d: "",
+      bezier: false
     });
 
     this._pathToCampIndicator = new SVGPath({
-      stroke: "#ffea3b", fill: "none",
+      color: "#ffea3bbf",
       "stroke-width": 1, d: "",
+      bezier: false
     });
 
     this._destinationIndicator = new SVGPath({
-      stroke: "#ffea3b", fill: "none",
+      color: "#ffffff7f",
       "stroke-width": 1, d: "",
+      "stroke-dasharray": "3 3",
+      bezier: false,
+      arrow: true
     });
     
     this.destinationSelector.append(this.formationSelector);
@@ -110,11 +115,12 @@ export default class PathLayer extends MetaLayer{
   }
   updatePathfinder(pos, path, mode = "camp"){
     this._moveDestinationSelector(pos, path, mode);
-    this.pathFinder.setPath(path, function(){ this.setAttribute("stroke", PATHFINDER_COLORS[mode]); } );
+    this.pathFinder.setPath(path, function(){ this.setAttribute("color", PATHFINDER_COLORS[mode]); } );
   }
 
   updateUnitIndicators(unit){
     this.logisticsIndicator.setPath(unit.pathToClosestHomeCityFromCamp);
     this.pathToCampIndicator.setPath(unit.pathToCamp)
+    this.destinationIndicator.setPath(unit.pathToDestination);
   }
 }
