@@ -24,7 +24,7 @@ export default class PathLayer extends MetaLayer{
       }),
     );
 
-    this._formationSelector = new SVGPath({ 
+    this._formationSelector = createComponent('path', { 
       d: "M -4 0 a 4 4 0 1 0 8 0 a 4 4 0 1 0 -8 0",
       fill: "#ffffff",
     });
@@ -49,7 +49,7 @@ export default class PathLayer extends MetaLayer{
     });
 
     this._destinationIndicator = new SVGPath({
-      color: "#ffffff7f",
+      color: "#ffffffbf",
       "stroke-width": 1, d: "",
       "stroke-dasharray": "3 3",
       bezier: false,
@@ -119,8 +119,11 @@ export default class PathLayer extends MetaLayer{
   }
 
   updateUnitIndicators(unit){
-    this.logisticsIndicator.setPath(unit.pathToClosestHomeCityFromCamp);
-    this.pathToCampIndicator.setPath(unit.pathToCamp)
-    this.destinationIndicator.setPath(unit.pathToDestination);
+    const color = (PATHFINDER_COLORS[unit?.state.nextCommand?.type] || "#7f7f7f") + 'bf';
+
+    this.logisticsIndicator.setPath(unit?.pathToClosestHomeCityFromCamp);
+    this.pathToCampIndicator.setPath(unit?.pathToCamp);
+    this.destinationIndicator.setAttribute("color", color);
+    this.destinationIndicator.setPath(unit?.pathToDestination);
   }
 }

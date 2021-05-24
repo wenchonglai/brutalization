@@ -155,7 +155,7 @@ export class Unit extends MetaGameObject{
     const destinationTile = this.state.nextCommand?.destinationTile || this.tile;
     return sourceTile.aStarSearch(
       destinationTile,
-      tile => !tile.hasEnemy(this)
+      tile => tile === destinationTile || !tile.hasEnemy(this)
     );
   }
   calculateMoralityBonus(){

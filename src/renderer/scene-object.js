@@ -73,8 +73,9 @@ export default class SceneObject{
     this._focused = true;
     this.virtualDom?.addClass('active');
 
-    this.gameObject instanceof Unit &&
-      this.mapSVG.updateUnitIndicators(this.gameObject);
+    this.mapSVG.updateUnitIndicators(
+      this.gameObject instanceof Unit ? this.gameObject : undefined
+    );
   }
   blur(){
     if (!this.focused) return;

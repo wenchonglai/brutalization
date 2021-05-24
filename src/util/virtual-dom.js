@@ -138,6 +138,7 @@ export class SVGPath extends VirtualDOM{
   
   setPath(path, callback){
     this.nodes.innerHTML = '';
+    callback?.call(this);
 
     if (!path || path.length < 2){
       this.path.setAttribute("d", "");
@@ -192,12 +193,13 @@ export class SVGPath extends VirtualDOM{
     const pathString = stringArr.join(' ');
 
     this.path.setAttribute("d", pathString);
-    callback?.call(this);
   }
 
   setAttribute(key, val){
     if (key === 'color'){
-      this.path.setAttribute('stroke', val);
+      this._color = val;
+      this.path?.setAttribute('stroke', val);
+      this.nodes?.setAttribute('fill', val);
     } else {
       VirtualDOM.prototype.setAttribute.call(this, key, val);
     }
