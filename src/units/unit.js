@@ -13,15 +13,18 @@ export class Unit extends MetaGameObject{
       campTile: campTile,
       tirednessLevel: 0, 
       totalHunger: 0, 
-      totalFoodLoad: population * 5, 
       morality: 0, pandemicStage: 0,
       formation,
-      movePoints: 0
+      movePoints: 0,
+      foodLoads: {
+        battleUnits: population * 5,
+        camp: 0
+      }
     }});
     
     this._originalState = Object.freeze({ tile, population });
     this._campTile = campTile;
-    this._refreshPaths();
+    this.updatePaths();
     
     Object.assign(this.state, this.balanceUnits());
 
@@ -40,10 +43,13 @@ export class Unit extends MetaGameObject{
   }
 
   dispatch(action){
+    if (this.actionQueue.length > 0 && this.actionQueue[0].type !== action.type)
+      this.clearActions();
+
     MetaGameObject.prototype.dispatch.call(this, action, () => {
-      this.balanceUnits.bind(this);
       if (['camp', 'action'].includes(action.type))
-        this._refreshPaths();
+        this.updatePaths();
+      this.balanceUnits.call(this);
     });
   }
   
@@ -153,6 +159,7 @@ export class Unit extends MetaGameObject{
   }
   calculatePathToDestination(sourceTile = this.tile){
     const destinationTile = this.state.nextCommand?.destinationTile || this.tile;
+
     return sourceTile.aStarSearch(
       destinationTile,
       tile => tile === destinationTile || !tile.hasEnemy(this)
@@ -252,7 +259,7 @@ export class Unit extends MetaGameObject{
     return unitActionReducer.call(this, this.state, action);
   }
 
-  _refreshPaths(){
+  updatePaths(){
     this._pathToClosestHomeCityFromCamp = this.calculatePathToClosestHomeCityFromCamp();
     this._pathToCamp = this.calculatePathToCamp();
     this._pathToDestination = this.calculatePathToDestination();
@@ -265,9 +272,42 @@ export class Unit extends MetaGameObject{
       let {type, cancelCondition, ...args} = this.nextCommand || {};
       this[type]?.(...Object.values(args));
     }
+
+    const state = this.state;
     
-    this.state.movePoints = Math.min(1, this.movePoints + 2);
-    this._refreshPaths();
+    state.movePoints = Math.min(1, this.movePoints + 2);
+    this.updatePaths();
+
+    // consume food
+    const foodConsumption = Math.min(state.battleUnits, state.foodLoads.battleUnits);
+
+    state.totalHunger += state.battleUnits - foodConsumption;
+
+    if (state.campTile !== this.tile){
+      state.foodLoads.battleUnits -= foodConsumption;
+      state.foodLoads.camp += foodConsumption;
+    } else {
+      const maxFoodLoadDiff = Math.min(
+        state.battleUnits * 5 - state.foodLoads.battleUnits,
+        state.foodLoads.camp
+      );
+
+      state.foodLoads.battleUnits += maxFoodLoadDiff;
+      state.foodLoads.camp -= maxFoodLoadDiff;
+    }
+
+    const isPandemic = Math.random() <= this.calculatePandemicPossibility();
+    const casualtyRate = Math.random() * (
+      Math.min(state.hungerLevel - 1, 0) + 
+      Math.min(state.tirednessLevel / 2 - 1, 0) + 
+      state.pandemicStage
+    ) / 25;
+
+    
+    
+    state.pandemicStage = Math.max(0, state.pandemicStage + (isPandemic ? 1 : -1) );
+    state.battleUnits -= casualtyRate * state.battleUnits | 0;
+    state.logisticUnits -= casualtyRate * state.logisticUnits | 0;
   }
 
   getValidCampPath(destinationTile){

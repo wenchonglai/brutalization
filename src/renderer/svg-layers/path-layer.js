@@ -9,6 +9,12 @@ const PATHFINDER_COLORS = {
   attack: "#df0000",
 }
 
+const DESTINATION_INDICATOR_COLORS = {
+  camp: "#dfdfdf",
+  action: "#ffbf00",
+  attack: "#df7f7f",
+}
+
 export default class PathLayer extends MetaLayer{
   constructor(){
     super('g', {className: 'path'});
@@ -43,13 +49,13 @@ export default class PathLayer extends MetaLayer{
     });
 
     this._pathToCampIndicator = new SVGPath({
-      color: "#ffea3bbf",
+      color: "#ffffffbf",
       "stroke-width": 1, d: "",
       bezier: false
     });
 
     this._destinationIndicator = new SVGPath({
-      color: "#ffffffbf",
+      color: "#bfbfbfbf",
       "stroke-width": 1, d: "",
       "stroke-dasharray": "3 3",
       bezier: false,
@@ -119,7 +125,7 @@ export default class PathLayer extends MetaLayer{
   }
 
   updateUnitIndicators(unit){
-    const color = (PATHFINDER_COLORS[unit?.state.nextCommand?.type] || "#7f7f7f") + 'bf';
+    const color = (DESTINATION_INDICATOR_COLORS[unit?.state.nextCommand?.type] || "#7f7f7f") + 'bf';
 
     this.logisticsIndicator.setPath(unit?.pathToClosestHomeCityFromCamp);
     this.pathToCampIndicator.setPath(unit?.pathToCamp);

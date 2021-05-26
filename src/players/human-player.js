@@ -12,6 +12,7 @@ export default class HumanPlayer extends Player{
 
   async promptAction(idleUnits){
     this._unresolved = new Set(idleUnits);
+
     for (let unit of idleUnits){
       await new Promise(resolve => {
         if (unit.tasked) resolve()

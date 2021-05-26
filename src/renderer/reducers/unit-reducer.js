@@ -2,17 +2,7 @@ export default function unitActionReducer(state, action){
   Object.freeze(state);
 
   const newState = {...state};
-  const foodConsumption = Math.min(newState.battleUnits, newState.totalFoodLoad);
-  const isPandemic = Math.random() <= this.calculatePandemicPossibility();
 
-  newState.totalHunger += newState.battleUnits - foodConsumption;
-  newState.totalFoodLoad -= foodConsumption;
-  newState.pandemicStage = Math.max(0, newState.pandemicStage + (isPandemic ? 1 : -1) );
-  newState.battleUnits -= Math.random() * newState.battleUnits * (
-    Math.min(newState.hungerLevel - 1, 0) + 
-    Math.min(newState.tirednessLevel / 2 - 1, 0) + 
-    newState.pandemicStage
-  ) / 25 | 0;
   newState.nextCommand = action.nextCommand;
 
   /* User commands */
@@ -24,7 +14,7 @@ export default function unitActionReducer(state, action){
   //          else: move to the target tile immediately; next command is still camp until reaching the destination
   // action:    cancel if 1) enemy is spotted in the surrounding; 2) destination is reached; or 3) food is barely enough to go back to camptile and destination tile is not camptile
   //          else: move to the target tile immediately; next command is still camp 
-
+  
   switch (action.type){
     case 'rest': {
       newState.movePoints -= 2;
@@ -48,8 +38,6 @@ export default function unitActionReducer(state, action){
         newState.morality -= 0.125 * action.costDistance * this.overallWearinessLevel;
         this.registerCamp(action.targetTile);
 
-      this._refreshPaths();
-
       return {
         ...newState, 
         campTile: action.targetTile,
@@ -66,7 +54,7 @@ export default function unitActionReducer(state, action){
       }
       else newState.morality = Math.min(newState.morality + 1, 0);
       
-      newState.totalFoodLoad += action.yield;
+      newState.foodLoads.battleUnits += action.yield;
 
       return newState;
     }
@@ -90,6 +78,7 @@ export default function unitActionReducer(state, action){
       newState.battleUnits -= action.casualty;
       newState.experience += Math.random() * 3;
       newState.battleUnits -= action.casualty;
+
       return newState;
     }
     default: {

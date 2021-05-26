@@ -23,6 +23,10 @@ export default class MetaGameObject{
     if (action)
       this._actionQueue[0] = action;
   }
+
+  clearActions(){
+    this._actionQueue = [];
+  }
   
   dispatch(action, callback){
     if (!action) return;

@@ -103,30 +103,29 @@ export default class Game{
       population: 500
     });
 
-    new Unit({
-      player: this.currentPlayer, 
-      tile: Tile.getTile({x: 2, y: 3}),
-      homeTile: sf.tile,
-      population: 2500,
-      formation: [1, -1]
-    });
+    // new Unit({
+    //   player: this.currentPlayer, 
+    //   tile: Tile.getTile({x: 2, y: 3}),
+    //   homeTile: sf.tile,
+    //   population: 5000,
+    //   formation: [1, -1]
+    // });
 
     new Unit({
       player: this.currentPlayer,
       tile: Tile.getTile({x: 4, y: 4}),
       homeTile: sf.tile,
-      population: 5000,
+      population: 10000,
       formation: [1, 0]
     });
 
-    new Unit({
-      player: this.currentPlayer,
-      tile: Tile.getTile({x: 5, y: 5}),
-      campTile: Tile.getTile({x: 5, y: 6}),
-      homeTile: ny.tile,
-      population: 12500,
-      formation: [0, -1]
-    });
+    // new Unit({
+    //   player: this.currentPlayer,
+    //   tile: Tile.getTile({x: 5, y: 5}),
+    //   homeTile: ny.tile,
+    //   population: 20000,
+    //   formation: [0, -1]
+    // });
 
     // new Unit({
     //   player: this.players[1],
@@ -140,13 +139,12 @@ export default class Game{
     //   player: this.players[1],
     //   tile: lv.tile,
     //   homeTile: lv.tile,
-    //   population: 12500
+    //   population: 10000
     // });
 
     // new Unit({
     //   player: this.players[1],
     //   tile: Tile.getTile({x: 5, y: 4}),
-    //   campTile: Tile.getTile({x: 6, y: 3}),
     //   homeTile: lv.tile,
     //   population: 12500,
     //   formation: [-1, 1]

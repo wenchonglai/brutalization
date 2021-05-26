@@ -237,8 +237,8 @@ export default class Renderer extends VirtualDOM{
     let unit = Array.from(tile.units)[0];
 
     if (!unit) return;
-
     const {battleUnits, x, y, campTile, formation, isDenselyFormed} = unit;
+
     const legions = battleUnits / 250 | 0;
     const normalCols = isDenselyFormed ? Math.ceil(legions ** 0.5) : 12;
     const rows = Math.ceil(legions / normalCols);

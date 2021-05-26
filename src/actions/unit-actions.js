@@ -5,7 +5,7 @@ export function rest(){
   });
 }
 
-export function guard(formation){
+export function guard(formation = [0, 0]){
   this.saveAction({
     type: 'guard', formation,
     nextCommand: {type: 'guard', formation}
@@ -116,6 +116,8 @@ export function action(destinationTile, formation, path){
 
     this.dispatch({type: 'battle', casualty: casualty1, morality: moralityDelta - 0.25});
     enemy.dispatch({type: 'battle', movePoints: 0, casualty: casualty2, morality: -moralityDelta - 0.25});
+
+    enemy.updatePaths();
   } else {
     let costDistance = this.tile.getEuclideanCostDistance(targetTile);
 
@@ -124,7 +126,9 @@ export function action(destinationTile, formation, path){
       costDistance,
       formation: formation,
       pathToClosestHomeCity: this.calculatePathToClosestHomeCity(),
-      nextCommand: { type: 'action', destinationTile, formation }
+      nextCommand: targetTile === destinationTile ? 
+        { type: 'action', destinationTile, formation } :
+        undefined
     });
   }
 }

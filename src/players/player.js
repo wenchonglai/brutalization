@@ -60,7 +60,7 @@ export default class Player{
 
   findIdleUnits(){
     return Array.from(this._units)
-      .filter(unit => unit.actionQueue.length === 0);
+      .filter(unit => unit.actionQueue.length === 0 && unit.state.nextCommand === undefined);
   }
   
   activate(){
