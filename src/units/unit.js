@@ -43,7 +43,7 @@ export class Unit extends MetaGameObject{
   }
 
   dispatch(action){
-    if (this.actionQueue.length > 0 && this.actionQueue[0].type !== action.type)
+    if (this.actionQueue?.[0]?.type !== action?.type)
       this.clearActions();
 
     MetaGameObject.prototype.dispatch.call(this, action, () => {
@@ -111,14 +111,15 @@ export class Unit extends MetaGameObject{
       commands: {
         rest: moveable && this.rest.bind(this),
         guard: moveable && this.guard.bind(this),
-        camp: moveable && (() => {
-          this.game.changeMapInteraction('camp', {
-            gameObject: this, 
-            command: (...args) => this.camp.call(this, ...args)
-          });
+        camp: moveable && this.tile == this.campTile ? 
+          () => {
+            this.game.changeMapInteraction('camp', {
+              gameObject: this, 
+              command: (...args) => this.camp.call(this, ...args)
+            });
 
-          return {skipResolve: true};
-        }),
+            return {skipResolve: true};
+          } : 'Unit is away from camp. Go back to the camp first before re-camping.',
         action: moveable && (() => {
           this.game.changeMapInteraction('action', {
             gameObject: this, 
@@ -278,10 +279,28 @@ export class Unit extends MetaGameObject{
     state.movePoints = Math.min(1, this.movePoints + 2);
     this.updatePaths();
 
+    // calculate death
+    const isPandemic = Math.random() <= this.calculatePandemicPossibility();
+    const baseCasualtyRate = Math.random() * (
+      1 + state.pandemicStage * 4
+    ) / 64;
+
+    const battleUnitCasualtyRate = baseCasualtyRate + Math.random() * (
+      Math.max(this.hungerLevel - 1, 0) + 
+      Math.max(state.tirednessLevel / 4 - 1, 0)
+    ) / 25;
+
+    state.pandemicStage = Math.max(0, state.pandemicStage + (isPandemic ? 1 : -1) );
+    state.battleUnits -= battleUnitCasualtyRate * state.battleUnits | 0;
+    state.logisticUnits -= baseCasualtyRate * state.logisticUnits | 0;
+
     // consume food
     const foodConsumption = Math.min(state.battleUnits, state.foodLoads.battleUnits);
-
-    state.totalHunger += state.battleUnits - foodConsumption;
+    
+    state.totalHunger = Math.min(
+      state.totalHunger + state.battleUnits - foodConsumption,
+      5 * state.battleUnits
+    );
 
     if (state.campTile !== this.tile){
       state.foodLoads.battleUnits -= foodConsumption;
@@ -295,19 +314,6 @@ export class Unit extends MetaGameObject{
       state.foodLoads.battleUnits += maxFoodLoadDiff;
       state.foodLoads.camp -= maxFoodLoadDiff;
     }
-
-    const isPandemic = Math.random() <= this.calculatePandemicPossibility();
-    const casualtyRate = Math.random() * (
-      Math.min(state.hungerLevel - 1, 0) + 
-      Math.min(state.tirednessLevel / 2 - 1, 0) + 
-      state.pandemicStage
-    ) / 25;
-
-    
-    
-    state.pandemicStage = Math.max(0, state.pandemicStage + (isPandemic ? 1 : -1) );
-    state.battleUnits -= casualtyRate * state.battleUnits | 0;
-    state.logisticUnits -= casualtyRate * state.logisticUnits | 0;
   }
 
   getValidCampPath(destinationTile){

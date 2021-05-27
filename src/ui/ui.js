@@ -128,13 +128,12 @@ class CommandsPanel extends VirtualDOM{
     if (!preserveSelectedIndex)
       this._selectedIndex = selectedIndex;
 
-    commands && Object.entries(commands).map(([key, value]) => {
-      let moveable = !!value;
+    Object.entries(commands).map(([key, value]) => {
+      let childNode;
 
-      let childNode = _(IconButton, {
+      childNode = _(IconButton, {
         id: key, selected: this._selectedIndex === key,
         command: value, handleResolve,
-        moveable,
         handleClick: e => {
           this._selectedIndex = key;
           this.update({commands, handleResolve}, true);
@@ -149,24 +148,25 @@ class CommandsPanel extends VirtualDOM{
   }
 }
 
-function IconButton({id, command, selected, handleClick, handleResolve, moveable}){
+function IconButton({id, command, selected, handleClick, handleResolve}){
   const text = id.capitalize();
   const roughTextLength = text.length - 
     text.replace(/[^i^j^l^I]/g, '').length / 2;
+  const isActive = typeof command === 'function'; 
 
   return (
     _("div", { context: this,
         className: `button command-button${
-          moveable ? (selected ? ' selected' : '') : ' inactive'
+          isActive ? (selected ? ' selected' : '') : ' inactive'
         }`, 
-        onClick: moveable ? (e) => {
+        onClick: isActive ? (e) => {
           handleClick();
           const {skipResolve} = command() || {};
           skipResolve || handleResolve();
         } : null
       },
       _("a", { 
-        title: text,
+        title: `${text}${isActive ? '' : ` - ${command || 'The unit is not moveable. Wait for the next turn.'}`}`,
         style: { fontSize: Math.min(16, 70 / roughTextLength) } 
       }, text)
     )

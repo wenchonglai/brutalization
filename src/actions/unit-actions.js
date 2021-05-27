@@ -127,8 +127,8 @@ export function action(destinationTile, formation, path){
       formation: formation,
       pathToClosestHomeCity: this.calculatePathToClosestHomeCity(),
       nextCommand: targetTile === destinationTile ? 
-        { type: 'action', destinationTile, formation } :
-        undefined
+        undefined :
+        { type: 'action', destinationTile, formation }
     });
   }
 }
