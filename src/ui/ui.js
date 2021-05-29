@@ -7,13 +7,22 @@ export default class UI extends VirtualDOM{
   constructor(game){
     super("div", {className: "ui"});
 
+    this._dateIndicator = _('div', {className: 'date'}, game.date);
     this._informationPanel = new InformationPanel();
     this._commandsPanel = new CommandsPanel({game});
     this._resolveFunctions = new Map();
     this._dropdownMenu = new DropDownMenu();
-    this.append(this.informationPanel, this.commandsPanel, this.dropdownMenu);
-  }
 
+    this.append(
+      _('div', {className: 'panels'}, 
+      this.informationPanel,
+      this.commandsPanel,
+      this.dropdownMenu
+      ), 
+      this.dateIndicator,
+    );
+  }
+  get dateIndicator(){ return this._dateIndicator; }
   get informationPanel(){ return this._informationPanel; }
   get commandsPanel(){ return this._commandsPanel; }
   get gameObject(){ return this._gameObject; }
@@ -72,7 +81,12 @@ export default class UI extends VirtualDOM{
     
     EasyDOM.render(this, document.getElementById('game'));
   }
+
+  updateDate(date){
+    this.dateIndicator.innerHTML = date;
+  }
 }
+
 
 class InformationPanel extends VirtualDOM{
   constructor({data} = {}){
@@ -110,7 +124,7 @@ class CommandsPanel extends VirtualDOM{
       onClick: (e) => {
         game.endTurn();
       }
-    }, "End Turn");
+    }, "Next Turn");
     this.append(this.commands, this.endTurnButton);
 
     this._selectedIndex = undefined;

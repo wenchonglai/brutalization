@@ -80,6 +80,7 @@ export class Unit extends MetaGameObject{
   get pathToClosestHomeCityFromCamp(){ return this._pathToClosestHomeCityFromCamp; }
   get pathToCamp(){ return this._pathToCamp; }
   get pathToDestination(){ return this._pathToDestination; }
+  get closestHomeCity(){ return this._closestHomeCity; }
 
   rest(){ return UnitActions.rest.call(this); }
   guard(formation){ return UnitActions.guard.call(this, formation); }
@@ -264,6 +265,7 @@ export class Unit extends MetaGameObject{
     this._pathToClosestHomeCityFromCamp = this.calculatePathToClosestHomeCityFromCamp();
     this._pathToCamp = this.calculatePathToCamp();
     this._pathToDestination = this.calculatePathToDestination();
+    this._closestHomeCity = this.pathToClosestHomeCityFromCamp.slice(-1)[0].city;
   }
 
   endTurn(){
@@ -295,16 +297,17 @@ export class Unit extends MetaGameObject{
     state.logisticUnits -= baseCasualtyRate * state.logisticUnits | 0;
 
     // consume food
-    const foodConsumption = Math.min(state.battleUnits, state.foodLoads.battleUnits);
+    this._closestHomeCity.storage.food -= this.battleUnits;
+    const battleUnitFoodConsumption = Math.min(state.battleUnits, state.foodLoads.battleUnits);
     
     state.totalHunger = Math.min(
-      state.totalHunger + state.battleUnits - foodConsumption,
+      state.totalHunger + state.battleUnits - battleUnitFoodConsumption,
       5 * state.battleUnits
     );
 
     if (state.campTile !== this.tile){
-      state.foodLoads.battleUnits -= foodConsumption;
-      state.foodLoads.camp += foodConsumption;
+      state.foodLoads.battleUnits -= battleUnitFoodConsumption;
+      state.foodLoads.camp += battleUnitFoodConsumption;
     } else {
       const maxFoodLoadDiff = Math.min(
         state.battleUnits * 5 - state.foodLoads.battleUnits,

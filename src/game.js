@@ -6,7 +6,7 @@ import UI from "./ui/ui.js";
 import { Unit } from "./units/unit.js";
 import { City } from "./tiles/city.js";
 
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'DECEMBER'];
+const MONTHS = ['Cold Spell', 'Spring Drizzles', 'Spring Equinox', 'Grain Rain', 'Crops Plenish', 'Summer Solstice', 'Heat Wave', 'Heat Ends', 'Autumn Equinox', 'Frost Begins', 'Light Snow', 'Winter Solstice'];
 const PLAYER_COLORS = [
   '#32a8ff',
   '#ff9a01',
@@ -19,10 +19,11 @@ export default class Game{
     this._players = [];
     this._currentPlayerId = 0;
     this._mapSize = mapSize;
+    this._round = 0;
+
     this.ui = new UI(this);
     this.renderer = new Renderer({game: this});
     this._dom = document.getElementById('game');
-    this._turns = 0;
 
     this.renderer.attachTo(this._dom);
     this.ui.attachTo(this._dom);
@@ -53,12 +54,13 @@ export default class Game{
   get currentPlayer(){ return this.players[this.currentPlayerId]; }
   get mapSize(){ return this._mapSize; }
   get gameObject(){ return this._gameObject; }
-  get turns(){ return this._turns; }
-  get date(){  
-    let date = (this.turns / this.numberOfPlayers | 0) % 3;
-    let month = ((this.turns / this.numberOfPlayers | 0) % 36) / 3 | 0;
-    
-    return `${['Early', 'Mid', 'Late'][date]} ${MONTHS[month]}`
+  get round(){ return this._round; }
+  get date(){
+    // const xun = this.round % 3;
+    const month = this.round % 12
+    const year = (this.round / 12 | 0) - 500;
+    const yearText = year < 0 ? `${-year} BC` : `${year} AD`
+    return `${MONTHS[month]}, ${yearText}`
   }
 
   _initialize(){
@@ -70,7 +72,7 @@ export default class Game{
     let sf = new City({
       player: this.currentPlayer, 
       tile: Tile.getTile({x: 1, y: 4}), 
-      population: 500
+      population: 6000
     });
 
     let ny = new City({
@@ -174,8 +176,10 @@ export default class Game{
   }
 
   start(){
+    if (this._currentPlayerId === 0)
+      this._round ++;
+
     this.currentPlayer.activate();
-    this._turns ++;
   }
 
   endTurn(){
@@ -184,6 +188,7 @@ export default class Game{
 
   nextTurn(){
     this._currentPlayerId = (this.currentPlayerId + 1) % this.numberOfPlayers;
+    this.ui.updateDate(this.date);
     this.start();
   }
 

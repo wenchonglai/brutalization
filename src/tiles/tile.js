@@ -133,16 +133,25 @@ export default class Tile {
   
   // get all valid adjoining tiles
   getAdjacentTiles(){
-    const tiles = [];
+    const tiles = [
+      [0, 1], [1, 0], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]
+    ] .map(([i, j]) => Tile.getTile({x: this.x + i, y: this.y + j}))
+      .filter(tile => tile)
 
-    for (let i = -1; i <= 1; i ++)
-      for (let j = -1; j <= 1; j ++)
-        if (i !== 0 || j !== 0){
-          let tile = Tile.getTile({x: this.x + i, y: this.y + j});
-          if (tile) tiles.push(tile);
-        }
-        
     return tiles;
+  }
+
+  getAdjacentTilesByDistance(distance){
+    const tiles = [];
+    const {x, y} = this;
+
+    for (let j = distance; j >= -distance; j--)
+      for (let i = distance; i >= -distance; i--){
+        const tile = Tile.getTile({x: this.x + i, y: this.y + j});
+        tile && tiles.push(tile);
+      }
+
+    return tiles.sort((a, b) => this.getEuclideanDistance(a) - this.getEuclideanDistance(b))
   }
 
   // assign values determined by assignFunction to surrounding tiles

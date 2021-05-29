@@ -50,7 +50,7 @@ div.unit-annotation::before{
   width: 18px;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, 3.6px) rotate(40deg);
+  transform: translate(-50%, 3.6px) rotate(45deg);
   transform-origin: 50% 50%;
   background-color: inherit;
   z-index: -1;

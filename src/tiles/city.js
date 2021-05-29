@@ -1,5 +1,6 @@
 import { Settlement } from "./settlement.js";
 import CITY_NAMES from "../settings/city-names.js";
+import {PER_LEVEL_RURAL_GRID_HOUSEHOLD_CAPACITY} from "../settings/game-settings.js"
 
 export class City extends Settlement{
   static COMBUSTIBILITY = 1;
@@ -9,16 +10,30 @@ export class City extends Settlement{
   static deleteCity(name){ this.cities.delete(name); }
 
   constructor({player, tile, population}){
-    const tiles = new Set([tile]);
+    const tiles = new Set();
+    let totalRuralPopulation = population * 10;
 
-    for (let t of tile.getAdjacentTiles()){
-      tiles.add(t);
+    for (let t of tile.getAdjacentTilesByDistance(3)){
+      let delta = Math.max(0, PER_LEVEL_RURAL_GRID_HOUSEHOLD_CAPACITY - t.populations.rural);
+
+      if (totalRuralPopulation >= delta){
+        totalRuralPopulation -= delta;
+        t.populations.rural += delta;
+        tiles.add(t);
+      } else {
+        t.populations.rural += totalRuralPopulation;
+        tiles.add(t);
+        break;
+      }
     }
 
     super({player, tile, state: {
       tiles,
       population: population,
       trainLevel: 1,
+      storage: {
+        food: 0
+      }
     }});
   }
 
@@ -41,9 +56,8 @@ export class City extends Settlement{
   get tiles(){ return Array.from(this.state.tiles); }
   get population(){ return this.state.population; }
   get populations(){
-    const populations = {rural: 0, urban: 0, drafted: 0};
+    const populations = {rural: 0, urban: this.population, drafted: 0};
 
-    Object.assign({rural: 0, urban: 0, drafted: 0});
     for (let tile of this.tiles){
       populations.rural += tile.populations.rural;
       populations.urban += tile.populations.urban;
@@ -52,14 +66,17 @@ export class City extends Settlement{
     
     return populations;
   }
+  get storage(){ return this.state.storage; }
 
   toUserInterface(){
     let {urban, rural, drafted} = this.populations;
+
     return {
       information: {
         "city": this.name,
         "total households": urban + rural,
         "urban households": this.population,
+        "total food storage": this.storage.food
       },
       commands: {
         settle: undefined,
@@ -69,7 +86,10 @@ export class City extends Settlement{
     }
   }
 
-  endTurn(){ this.grow(); }
+  endTurn(){
+    this.grow();
+
+  }
 
   grow(){ this._tiles.forEach(tile => tile.grow()); }
   train(){ this.state.trainLevel += 1; }
