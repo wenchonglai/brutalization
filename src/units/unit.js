@@ -9,6 +9,7 @@ export class Unit extends MetaGameObject{
     super({player, tile, state: {
       battleUnits: population,
       logisticUnits: 0 ,
+      unitsOnLeave: 0,
       experience,
       campTile: campTile,
       tirednessLevel: 0, 
@@ -22,7 +23,7 @@ export class Unit extends MetaGameObject{
       }
     }});
     
-    this._originalState = Object.freeze({ tile, population });
+    this._originalState = Object.freeze({ tile: homeTile, population });
     this._campTile = campTile;
     this.updatePaths();
     
@@ -57,9 +58,11 @@ export class Unit extends MetaGameObject{
   get cityTile(){ return this._cityTile; }
   get cityTile(){ return this._cityTile; }
   get homeTile(){ return this.originalState.tile; }
+  get homeCity(){ return this.homeTile.city; }
   get campTile(){ return this.state.campTile; }
   get battleUnits(){ return this.state.battleUnits; }
   get logisticUnits(){ return this.state.logisticUnits; }
+  get totalUnits(){ return this.logisticUnits + this.battleUnits; }
   get experience(){ return this.state.experience; }
   get pandemicStage(){ return this.state.pandemicStage; }
   get tirednessLevel(){ return this.state.tirednessLevel; }
@@ -100,7 +103,7 @@ export class Unit extends MetaGameObject{
     return {
       information: {
         "battle units": this.battleUnits,
-        "logistic units": this.logisticUnits,
+        "total units": this.totalUnits,
         experience: approximate(this.experience),
         hunger: this.hungerLevel,
         stamina: this.staminaLevel,
@@ -146,12 +149,19 @@ export class Unit extends MetaGameObject{
 
   calculatePathToClosestHomeCity(sourceTile = this.tile){
     return sourceTile.bfs(
-      tile => tile.city && tile.city.player === this.player, //&& tile.city.totalFoodStorage > 0,
-      tile => !tile.hasEnemy(this)
-    );
+      tile => tile.city && tile.city.player === this.player && 
+        (tile.city.foodStorage >= this.totalUnits || tile.city === this.homeTile),
+      tile => !tile.hasEnemy(this),
+    ) || this.calculatePathToHomeCityFromCamp();
   }
   calculatePathToClosestHomeCityFromCamp(){
     return this.calculatePathToClosestHomeCity(this.campTile);
+  }
+  calculatePathToHomeCityFromCamp(sourceTile = this.tile){
+    return this.campTile.aStarSearch(
+      this.homeTile,
+      tile => !tile.hasEnemy(this)
+    );
   }
   calculatePathToCamp(sourceTile = this.tile){
     return this.campTile.aStarSearch(
@@ -281,16 +291,21 @@ export class Unit extends MetaGameObject{
     state.movePoints = Math.min(1, this.movePoints + 2);
     this.updatePaths();
 
+    const hungerLevel = this.hungerLevel;
+
     // calculate death
     const isPandemic = Math.random() <= this.calculatePandemicPossibility();
     const baseCasualtyRate = Math.random() * (
-      1 + state.pandemicStage * 4
+      1 + state.pandemicStage
     ) / 64;
 
-    const battleUnitCasualtyRate = baseCasualtyRate + Math.random() * (
-      Math.max(this.hungerLevel - 1, 0) + 
-      Math.max(state.tirednessLevel / 4 - 1, 0)
-    ) / 25;
+    const battleUnitCasualtyRate = Math.min(
+      baseCasualtyRate + Math.random() * (
+        Math.max(this.hungerLevel - 1, 0) ** 2 +
+        Math.max(state.tirednessLevel / 4 - 1, 0) ** 2
+      ) / 16,
+      1
+    );
 
     state.pandemicStage = Math.max(0, state.pandemicStage + (isPandemic ? 1 : -1) );
     state.battleUnits -= battleUnitCasualtyRate * state.battleUnits | 0;
@@ -301,7 +316,7 @@ export class Unit extends MetaGameObject{
     const battleUnitFoodConsumption = Math.min(state.battleUnits, state.foodLoads.battleUnits);
     
     state.totalHunger = Math.min(
-      state.totalHunger + state.battleUnits - battleUnitFoodConsumption,
+      state.battleUnits * (hungerLevel + 1) - battleUnitFoodConsumption,
       5 * state.battleUnits
     );
 
@@ -320,13 +335,14 @@ export class Unit extends MetaGameObject{
   }
 
   getValidCampPath(destinationTile){
-    this.player.updateAccessibleTiles();
+    this.player.updateAccessibleTiles(this.homeCity);
 
     return this.tile.aStarSearch(
       destinationTile, 
       tile => 
         this.player.accessibleTiles.has(tile) &&
         (!tile.camp && !(tile.city && tile.city.player !== this.player) ) &&
+        
         (!tile.hasUnit || this.tile === destinationTile ) ||
         tile == this.campTile || tile == this.tile
     )

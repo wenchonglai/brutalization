@@ -23,13 +23,14 @@ export default class Player{
   get accessibleTiles(){ return this._accessibleTiles; } 
 
 
-  updateAccessibleTiles(){
+  updateAccessibleTiles(...cities){
     const set = new Set();
+    const self = this;
 
-    for (let city of this.cities){
+    for (let city of cities || this.cities){
       let subset = city.tile.bfs(
-        () => false, tile => !tile.hasEnemy(this),
-        {maxCostDistance: 14, returnAll: true}
+        () => false, tile => !tile.hasEnemy(self),
+        {maxCostDistance: 15, returnAll: true}
       );
       
       Array.from(subset || []).forEach(tile => set.add(tile))
@@ -94,6 +95,9 @@ export default class Player{
 
     for (let unit of this.units)
       unit.endTurn();
+
+    for (let city of this.cities)
+      city.endTurn();
 
     this.deactivate();
     this.game.nextTurn();

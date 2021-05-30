@@ -24,9 +24,10 @@ export default function aStarSearch(destinationTile, pathFunc, {maxCostDistance 
 
     if ( costDistanceToTile >= maxCostDistance) continue;
     
-    for (let adjacentTile of tile.getAdjacentTiles())
-      if (pathFunc(adjacentTile)){
-        let deltaCostDistance = adjacentTile.getEuclideanCostDistance(tile);
+    for (let adjacentTile of tile.getAdjacentTiles()){
+      let deltaCostDistance = adjacentTile.getEuclideanCostDistance(tile);
+
+      if (pathFunc(adjacentTile, deltaCostDistance)){
         let totalHeuristicDistance = costDistanceToTile + deltaCostDistance;
         let adjacentMapPrevCostDistance = costDistanceMap.get(adjacentTile);
 
@@ -42,6 +43,7 @@ export default function aStarSearch(destinationTile, pathFunc, {maxCostDistance 
           queue.push(adjacentTile);
         }
       }
+    }
 
     queue.sort((a, b) => 
       costDistanceMap.get(a) + heuristicMap.get(a) - 

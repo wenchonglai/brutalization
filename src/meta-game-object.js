@@ -5,6 +5,10 @@ export default class MetaGameObject{
     this.campTile?.registerCamp(this);
     this.register({player, tile});
   }
+
+  get round(){
+    return this.player.game.round;
+  }
   
   register({player, tile}){
     tile?.register(this);

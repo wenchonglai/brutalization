@@ -5,17 +5,10 @@ import Tile from "./tiles/tile.js";
 import UI from "./ui/ui.js";
 import { Unit } from "./units/unit.js";
 import { City } from "./tiles/city.js";
-
-const MONTHS = ['Cold Spell', 'Spring Drizzles', 'Spring Equinox', 'Grain Rain', 'Crops Plenish', 'Summer Solstice', 'Heat Wave', 'Heat Ends', 'Autumn Equinox', 'Frost Begins', 'Light Snow', 'Winter Solstice'];
-const PLAYER_COLORS = [
-  '#32a8ff',
-  '#ff9a01',
-  '#ff3266',
-  '#9f7fff',
-];
+import { MONTHS, PLAYER_COLORS } from "./settings/game-settings.js"
 
 export default class Game{
-  constructor({numberOfPlayers = 2, mapSize = 16} = {}){
+  constructor({numberOfPlayers = 4, mapSize = 16} = {}){
     this._players = [];
     this._currentPlayerId = 0;
     this._mapSize = mapSize;
@@ -69,46 +62,82 @@ export default class Game{
       for (let y = 0; y < this.mapSize; y++)
         new Tile({x, y});
 
-    let sf = new City({
+    const cityOfAnyi = new City({
       player: this.currentPlayer, 
-      tile: Tile.getTile({x: 1, y: 4}), 
+      tile: Tile.getTile({x: 7, y: 6}), 
+      population: 5000
+    });
+
+    const cityOfYangdi = new City({
+      player: this.players[3],
+      tile: Tile.getTile({x: 9, y: 11}), 
+      population: 3000
+    });
+
+    const cityOfYewang = new City({
+      player: this.players[3],
+      tile: Tile.getTile({x: 9, y: 7}), 
+      population: 3000
+    });
+
+    const cityOfXinzheng = new City({
+      player: this.players[3],
+      tile: Tile.getTile({x: 10, y: 9}), 
+      population: 3000
+    });
+
+    const cityOfDaliang = new City({
+      player: this.currentPlayer,
+      tile: Tile.getTile({x: 11, y: 8}), 
       population: 6000
     });
 
-    let ny = new City({
+    const cityOfYe = new City({
       player: this.currentPlayer,
-      tile: Tile.getTile({x: 2, y: 7}), 
-      population: 500
+      tile: Tile.getTile({x: 12, y: 5}), 
+      population: 3000
     });
 
-    let city_0_2 = new City({
-      player: this.currentPlayer,
-      tile: Tile.getTile({x: 1, y: 10}), 
-      population: 500
-    });
-
-    let la = new City({
+    const cityOfYong = new City({
       player: this.players[1], 
-      tile: Tile.getTile({x: 4, y: 1}), 
-      population: 500
+      tile: Tile.getTile({x: 1, y: 7}), 
+      population: 4000
     });
 
-    let lv = new City({
+    const cityOfYueYang = new City({
       player: this.players[1], 
-      tile: Tile.getTile({x: 7, y: 2}), 
-      population: 500
+      tile: Tile.getTile({x: 4, y: 7}), 
+      population: 3000
     });
 
-    let city_2_10 = new City({
+    const cityOfShan = new City({
       player: this.players[1], 
-      tile: Tile.getTile({x: 10, y: 1}), 
-      population: 500
+      tile: Tile.getTile({x: 6, y: 8}), 
+      population: 3000
+    });
+
+    const cityOfJinyang = new City({
+      player: this.players[2],
+      tile: Tile.getTile({x: 8, y: 2}), 
+      population: 4000
+    });
+
+    const cityOfZhongmou = new City({
+      player: this.players[2],
+      tile: Tile.getTile({x: 11, y: 4}), 
+      population: 3000
+    });
+
+    const cityOfHandan = new City({
+      player: this.players[2],
+      tile: Tile.getTile({x: 12, y: 3}), 
+      population: 3000
     });
 
     // new Unit({
     //   player: this.currentPlayer, 
     //   tile: Tile.getTile({x: 2, y: 3}),
-    //   homeTile: sf.tile,
+    //   homeTile: cityOfAnyi.tile,
     //   population: 5000,
     //   formation: [1, -1]
     // });
@@ -116,7 +145,7 @@ export default class Game{
     new Unit({
       player: this.currentPlayer,
       tile: Tile.getTile({x: 4, y: 4}),
-      homeTile: sf.tile,
+      homeTile: cityOfAnyi.tile,
       population: 10000,
       formation: [1, 0]
     });
@@ -124,7 +153,7 @@ export default class Game{
     // new Unit({
     //   player: this.currentPlayer,
     //   tile: Tile.getTile({x: 5, y: 5}),
-    //   homeTile: ny.tile,
+    //   homeTile: cityOfDaliang.tile,
     //   population: 20000,
     //   formation: [0, -1]
     // });
@@ -132,22 +161,22 @@ export default class Game{
     // new Unit({
     //   player: this.players[1],
     //   tile: Tile.getTile({x: 3, y: 2}),
-    //   homeTile: la.tile,
+    //   homeTile: cityOfYong.tile,
     //   population: 5000,
     //   formation: [1, 0]
     // });
 
     // new Unit({
     //   player: this.players[1],
-    //   tile: lv.tile,
-    //   homeTile: lv.tile,
+    //   tile: cityOfYueYang.tile,
+    //   homeTile: cityOfYueYang.tile,
     //   population: 10000
     // });
 
     // new Unit({
     //   player: this.players[1],
     //   tile: Tile.getTile({x: 5, y: 4}),
-    //   homeTile: lv.tile,
+    //   homeTile: cityOfYueYang.tile,
     //   population: 12500,
     //   formation: [-1, 1]
     // });

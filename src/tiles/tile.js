@@ -4,6 +4,7 @@ import { Improvement } from "./improvement.js";
 import { Settlement } from "./settlement.js";
 import { Unit } from "../units/unit.js";
 import { City } from "./city.js";
+import { POPULATION_GROWTH_RATE } from "../settings/game-settings.js";
 
 const TERRAINS = [
   "OCEAN",      // 0
@@ -29,7 +30,7 @@ export default class Tile {
 
   constructor({x, y}, {
     terrain = 4,
-    population = {rural: 500, urban: 0, drafted: 0}
+    populations = {rural: 500, drafted: 0}
   } = {}){
     this._x = x;
     this._y = y;
@@ -39,7 +40,7 @@ export default class Tile {
     this._units = new Set();
     this._connections = [];
     this._city = null;
-    this._populations = {...population};
+    this._populations = {...populations};
     this._totalLaborTime = 0;
     this._trainLevel = 0;
     this._attitudes = {};
@@ -63,6 +64,7 @@ export default class Tile {
 
   get x(){return this._x;}
   get y(){return this._y;}
+  get population(){ return this._populations.rural; }
   get populations(){ return this._populations; }  // total populations (rural, urban, drafted) of this tile
   get attitudes(){ return this._attitudes; }      // attitudes towards different countries
   get improvements(){ return this._improvements; }
@@ -70,10 +72,15 @@ export default class Tile {
   get camp(){ return this._camp; }
   get units(){ return this._units; }
   get hasUnit(){ return this.units.size > 0; }
+  get player(){ return this._player; }
+  get draftLevel(){ return this.populations.drafted / this.populations.rural; }
 
-  hasEnemy(gameObject){
+  hasEnemy(gameObject, console = false){
+    if (this.units.size === 0)
+      return false;
+
     return Array.from(this.units)
-      .some(unit => unit.player !== gameObject?.player ?? gameObject);
+      .some(unit => unit.player.id !== (gameObject?.player ?? gameObject)?.id);
   }
 
   getEnemy(gameObject){
@@ -110,15 +117,7 @@ export default class Tile {
     return distance;
   }
 
-  endYear(){
-    // increase population
-    let {rural, urban, drafted} = this._populations;
-
-    rural += ( rural - drafted * rural / (rural + urban) ) / 8 | 1;
-    urban += ( urban - drafted * urban / (rural + urban) ) / 8 | 1;
-
-    Object.assign(this._populations, {rural, urban});
-
+  endTurn(){
     // change attitude
     for (let key of Object.keys(this.attitudes)){
       let currentAttitude = this.attitudes[key];
@@ -129,6 +128,14 @@ export default class Tile {
     
     // reset labor time
     this._totalLaborTime = 0;
+  }
+  grow(){
+    // increase population
+    let {rural, drafted} = this.populations;
+
+    rural += ( rural - drafted ) * POPULATION_GROWTH_RATE | 0;
+
+    Object.assign(this._populations, {rural});
   }
   
   // get all valid adjoining tiles
