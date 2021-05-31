@@ -1,10 +1,8 @@
 import aStarSearch from "../util/a-star.js";
 import bfs from "../util/bfs.js";
-import { Improvement } from "./improvement.js";
-import { Settlement } from "./settlement.js";
 import { Unit } from "../units/unit.js";
 import { City } from "./city.js";
-import { POPULATION_GROWTH_RATE } from "../settings/game-settings.js";
+import MetaGeography from "./meta-geography.js";
 
 const TERRAINS = [
   "OCEAN",      // 0
@@ -17,7 +15,7 @@ const TERRAINS = [
   "ALPINE",     // 7
 ];
 
-export default class Tile {
+export default class Tile extends MetaGeography{
   static tiles = {};
   static setTile({x, y}, tile){
     if (Tile.tiles[x] === undefined) Tile.tiles[x] = {};
@@ -30,8 +28,10 @@ export default class Tile {
 
   constructor({x, y}, {
     terrain = 4,
-    populations = {rural: 500, drafted: 0}
+    populations = {civilian: 500, military: 0}
   } = {}){
+    super();
+
     this._x = x;
     this._y = y;
     this._terrain = terrain;
@@ -64,8 +64,7 @@ export default class Tile {
 
   get x(){return this._x;}
   get y(){return this._y;}
-  get population(){ return this._populations.rural; }
-  get populations(){ return this._populations; }  // total populations (rural, urban, drafted) of this tile
+  get populations(){ return this._populations; }  // total populations (civilian, military) of this tile
   get attitudes(){ return this._attitudes; }      // attitudes towards different countries
   get improvements(){ return this._improvements; }
   get city(){ return this._city; }
@@ -73,9 +72,8 @@ export default class Tile {
   get units(){ return this._units; }
   get hasUnit(){ return this.units.size > 0; }
   get player(){ return this._player; }
-  get draftLevel(){ return this.populations.drafted / this.populations.rural; }
 
-  hasEnemy(gameObject, console = false){
+  hasEnemy(gameObject){
     if (this.units.size === 0)
       return false;
 
@@ -128,14 +126,6 @@ export default class Tile {
     
     // reset labor time
     this._totalLaborTime = 0;
-  }
-  grow(){
-    // increase population
-    let {rural, drafted} = this.populations;
-
-    rural += ( rural - drafted ) * POPULATION_GROWTH_RATE | 0;
-
-    Object.assign(this._populations, {rural});
   }
   
   // get all valid adjoining tiles

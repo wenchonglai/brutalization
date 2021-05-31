@@ -1,6 +1,6 @@
-import MetaGameObject from "../meta-game-object.js";
+import MetaGeography from "./meta-geography.js";
 
-export class Improvement extends MetaGameObject{
+export class Improvement extends MetaGeography{
   constructor({player, tile, state}){
     super({player, tile, state})
   }

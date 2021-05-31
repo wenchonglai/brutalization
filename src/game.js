@@ -68,71 +68,74 @@ export default class Game{
       population: 5000
     });
 
-    const cityOfYangdi = new City({
-      player: this.players[3],
-      tile: Tile.getTile({x: 9, y: 11}), 
-      population: 3000
-    });
+    // const cityOfYangdi = new City({
+      // player: this.players[3],
+      // tile: Tile.getTile({x: 9, y: 11}), 
+      // population: 3000
+    // });
 
-    const cityOfYewang = new City({
-      player: this.players[3],
-      tile: Tile.getTile({x: 9, y: 7}), 
-      population: 3000
-    });
+    // const cityOfYewang = new City({
+      // player: this.players[3],
+      // tile: Tile.getTile({x: 9, y: 7}), 
+      // population: 3000
+    // });
 
-    const cityOfXinzheng = new City({
-      player: this.players[3],
-      tile: Tile.getTile({x: 10, y: 9}), 
-      population: 3000
-    });
+    // const cityOfXinzheng = new City({
+      // player: this.players[3],
+      // tile: Tile.getTile({x: 10, y: 9}), 
+      // population: 3000
+    // });
 
-    const cityOfDaliang = new City({
-      player: this.currentPlayer,
-      tile: Tile.getTile({x: 11, y: 8}), 
-      population: 6000
-    });
+    // const cityOfDaliang = new City({
+      // player: this.currentPlayer,
+      // tile: Tile.getTile({x: 11, y: 8}), 
+      // population: 6000
+    // });
 
-    const cityOfYe = new City({
-      player: this.currentPlayer,
-      tile: Tile.getTile({x: 12, y: 5}), 
-      population: 3000
-    });
+    // const cityOfYe = new City({
+      // player: this.currentPlayer,
+      // tile: Tile.getTile({x: 12, y: 5}), 
+      // population: 3000
+    // });
 
-    const cityOfYong = new City({
-      player: this.players[1], 
-      tile: Tile.getTile({x: 1, y: 7}), 
-      population: 4000
-    });
+    // const cityOfYong = new City({
+      // player: this.players[1], 
+      // tile: Tile.getTile({x: 1, y: 7}), 
+      // population: 4000
+    // });
 
-    const cityOfYueYang = new City({
-      player: this.players[1], 
-      tile: Tile.getTile({x: 4, y: 7}), 
-      population: 3000
-    });
+    // const cityOfYueYang = new City({
+      // player: this.players[1], 
+      // tile: Tile.getTile({x: 4, y: 7}), 
+      // population: 3000
+    // });
 
-    const cityOfShan = new City({
-      player: this.players[1], 
-      tile: Tile.getTile({x: 6, y: 8}), 
-      population: 3000
-    });
+    // const cityOfShan = new City({
+      // player: this.players[1], 
+      // tile: Tile.getTile({x: 6, y: 8}), 
+      // population: 3000
+    // });
 
-    const cityOfJinyang = new City({
-      player: this.players[2],
-      tile: Tile.getTile({x: 8, y: 2}), 
-      population: 4000
-    });
+    // const cityOfJinyang = new City({
+      // player: this.players[2],
+      // tile: Tile.getTile({x: 8, y: 2}), 
+      // population: 4000
+    // });
 
-    const cityOfZhongmou = new City({
-      player: this.players[2],
-      tile: Tile.getTile({x: 11, y: 4}), 
-      population: 3000
-    });
+    // const cityOfZhongmou = new City({
+      // player: this.players[2],
+      // tile: Tile.getTile({x: 11, y: 4}), 
+      // population: 3000
+    // });
 
-    const cityOfHandan = new City({
-      player: this.players[2],
-      tile: Tile.getTile({x: 12, y: 3}), 
-      population: 3000
-    });
+    // const cityOfHandan = new City({
+      // player: this.players[2],
+      // tile: Tile.getTile({x: 12, y: 3}), 
+      // population: 3000
+    // });
+
+    for (let i = 0; i < 6; i++)
+      cityOfAnyi.draft();
 
     // new Unit({
     //   player: this.currentPlayer, 
@@ -142,13 +145,13 @@ export default class Game{
     //   formation: [1, -1]
     // });
 
-    new Unit({
-      player: this.currentPlayer,
-      tile: Tile.getTile({x: 4, y: 4}),
-      homeTile: cityOfAnyi.tile,
-      population: 10000,
-      formation: [1, 0]
-    });
+    // new Unit({
+    //   player: this.currentPlayer,
+    //   tile: Tile.getTile({x: 4, y: 4}),
+    //   homeTile: cityOfAnyi.tile,
+    //   population: 10000,
+    //   formation: [1, 0]
+    // });
 
     // new Unit({
     //   player: this.currentPlayer,

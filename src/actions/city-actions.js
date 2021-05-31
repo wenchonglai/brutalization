@@ -1,6 +1,9 @@
 import {City} from "../tiles/city.js"
 import { Unit } from "../units/unit.js";
 
+export const DRAFT = 'DRAFT';
+export const TRAIN = 'TRAIN';
+
 export function draft(){ 
   const tiles = [...this.tiles, this].sort((a, b) => a.draftLevel - b.draftLevel);
   const N = tiles.length;
@@ -18,6 +21,7 @@ export function draft(){
 
     for (let i = 0; i < m; i++){
       let delta = (tiles[m].draftLevel - tiles[i].draftLevel) * tiles[i].population;
+
       sum += delta;
       unitsToBeDrafted[i] = delta;
       totalUnitsToBeDrafted -= delta;
@@ -41,22 +45,25 @@ export function draft(){
     );
     
     const self = tiles[i];
-    const toBeDrafted = Math.min(
-      self.population, self.populations.drafted + delta
+    const toBeDrafted = Math.max(
+      Math.min( self.civilianPopulation, delta ), 0
     );
 
     actualUnitsDrafted += delta;
 
     if (self === this)
-      self.dispatch({ type: 'draft', drafted: toBeDrafted });
-    else 
-      self.populations.drafted = toBeDrafted;
+      self.dispatch({ type: DRAFT, drafted: toBeDrafted });
+    else {
+      self.populations.civilian -= toBeDrafted;
+      self.populations.military += toBeDrafted;
+    }
   }
 
   if (this.tile.units.size > 0){
     for (let unit of this.tile.units){
       if (unit instanceof Unit){
         unit.state.battleUnits += actualUnitsDrafted;
+        unit.state.foodLoads.camp += actualUnitsDrafted * 5;
         break;
       }
     }

@@ -27,7 +27,7 @@ export default function aStarSearch(destinationTile, pathFunc, {maxCostDistance 
     for (let adjacentTile of tile.getAdjacentTiles()){
       let deltaCostDistance = adjacentTile.getEuclideanCostDistance(tile);
 
-      if (pathFunc(adjacentTile, deltaCostDistance)){
+      if (pathFunc(adjacentTile, costDistanceToTile)){
         let totalHeuristicDistance = costDistanceToTile + deltaCostDistance;
         let adjacentMapPrevCostDistance = costDistanceMap.get(adjacentTile);
 

@@ -11,23 +11,25 @@ export class City extends Settlement{
   static setCity(name, city){ this.cities.set(name, city) }
   static deleteCity(name){ this.cities.delete(name); }
 
-  constructor({player, tile, population, initialFoodStorage = population * 20}){
+  constructor({player, tile, population, initialFoodStorage = population * 60}){
     const tiles = new Set();
     
     let totalRuralPopulation = population * 10;
 
     for (let t of tile.getAdjacentTilesByDistance(3)){
-      let delta = Math.max(0, PER_LEVEL_RURAL_GRID_HOUSEHOLD_CAPACITY - t.populations.rural);
+      let delta = Math.max(
+        0, PER_LEVEL_RURAL_GRID_HOUSEHOLD_CAPACITY - t.populations.civilian
+      );
       
       if (t.player)
         continue;
 
       if (totalRuralPopulation >= delta){
-        t.populations.rural += delta;
-        totalRuralPopulation -= t.populations.rural;
+        t.populations.civilian += delta;
+        totalRuralPopulation -= t.populations.civilian;
         tiles.add(t);
       } else {
-        t.populations.rural = totalRuralPopulation;
+        t.populations.civilian = totalRuralPopulation;
         tiles.add(t);
         break;
       }
@@ -35,11 +37,12 @@ export class City extends Settlement{
 
     super({player, tile, state: {
       tiles,
-      populations: {urban: population, drafted: 0},
+      populations: {civilian: population, military: 0},
       trainLevel: 1,
       storage: {
         food: initialFoodStorage
-      }
+      },
+      draftHistory: 0
     }});
 
     for (let t of tiles)
@@ -63,25 +66,29 @@ export class City extends Settlement{
 
   get name(){ return this._name; }
   get tiles(){ return Array.from(this.state.tiles); }
-  get population(){ return this.populations.urban; }
   get populations(){ return this.state.populations; }
+  get urbanPopulation(){ return this.populations.civilian; }
   get totalPopulations(){
-    const totalPopulations = {rural: 0, ...this.populations};
+    const totalPopulations = {
+      rural: 0, 
+      urban: this.urbanPopulation,
+      military: this.populations.military
+    };
 
     for (let tile of this.tiles){
-      totalPopulations.rural += tile.populations.rural;
-      totalPopulations.drafted += tile.populations.drafted;
+      totalPopulations.rural += tile.populations.civilian;
+      totalPopulations.military += tile.populations.military;
     }
     
     return totalPopulations;
   }
   get storage(){ return this.state.storage; }
   get foodStorage(){ return this.storage.food; }
-  get draftLevel(){ return this.populations.drafted / this.populations.urban; }
+  get draftHistory(){ return this.state.draftHistory; }
   get overallDraftLevel(){
-    let {rural, urban, drafted} = this.totalPopulations;
+    let {rural, urban, military} = this.totalPopulations;
 
-    return drafted / (rural + urban);
+    return military / (rural + urban);
   }
 
   draft(){ return CityActions.draft.call(this); }
@@ -92,18 +99,18 @@ export class City extends Settlement{
   }
 
   toUserInterface(){
-    let {urban, rural, drafted} = this.totalPopulations;
+    let {urban, rural, military} = this.totalPopulations;
 
     return {
       information: {
         "city": this.name,
-        "total households": urban + rural,
-        "urban households": urban,
+        "total civilians": urban + rural,
+        "total military units": military,
         "total food storage": this.storage.food
       },
       commands: {
         settle: undefined,
-        draft: urban + rural >= drafted + 2500 ? 
+        draft: urban + rural >= military + 2500 ? 
           this.draft.bind(this) :
           'Maximum draft level reached',
         train: undefined
@@ -117,19 +124,28 @@ export class City extends Settlement{
 
     this.tiles.forEach(tile => tile.endTurn());
     this.storage.food = this.storage.food * 0.95 | 0;
-
+    this.state.draftHistory += this.totalPopulations.military;
+    
     if (this.round % 12 === 0) {
-      this.storage.food += this.totalPopulations.rural * 2;
+      this.storage.food += (
+        this.totalPopulations.rural - this.draftHistory / 12
+      ) * 6 | 0;
+
+      this.state.draftHistory = 0;
     }
   }
 
   grow(){
-    let {urban, drafted} = this.populations;
+    let urbanPopulation = this.urbanPopulation;
 
-    urban += (urban - drafted) * POPULATION_GROWTH_RATE | 0;
-    Object.assign(this.state.populations, {urban});
-
+    urbanPopulation += urbanPopulation * POPULATION_GROWTH_RATE | 0;
+    Object.assign(this.state.populations, {urbanPopulation});
     this.tiles.forEach(tile => tile.grow());
   }
   train(){ this.state.trainLevel += 1; }
+  receiveMilitaryUnits(units){
+    const toCity = units * this
+    let toTiles = units - toUrban;
+    this.population.drafted = Math.max(this.population.drafted - urban, 0)
+  }
 }

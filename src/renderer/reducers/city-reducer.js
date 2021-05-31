@@ -1,3 +1,5 @@
+import * as CityActions from "../../actions/city-actions.js"
+
 export default function cityActionReducer(state, action){
   Object.freeze(state);
 
@@ -16,11 +18,13 @@ export default function cityActionReducer(state, action){
     //   newState.tirednessLevel -= 1;
     //   return newState;
     // };
-    case 'draft': {
-      newState.populations.drafted = action.drafted;
+    case CityActions.DRAFT: {
+      const drafted = action.drafted;
+      newState.populations.military += drafted;
+      newState.populations.civilian -= drafted;
       return newState;
     }
-    case 'train': {
+    case CityActions.TRAIN: {
       newState.movePoints -= 2;
       newState.trainLevel = state.trainLevel + 1;
       return newState;

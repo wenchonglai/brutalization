@@ -13,45 +13,57 @@ export class Unit extends MetaGameObject{
       experience,
       campTile: campTile,
       tirednessLevel: 0, 
-      totalHunger: 0, 
+      hungers: {
+        battleUnits: 0, 
+        logisticUnits: 0
+      },
       morality: 0, pandemicStage: 0,
       formation,
       movePoints: 0,
       foodLoads: {
-        battleUnits: population * 5,
-        camp: 0
+        battleUnits: 0,
+        camp: population * 5
       }
     }});
-    
+
     this._originalState = Object.freeze({ tile: homeTile, population });
     this._campTile = campTile;
     this.updatePaths();
     
     Object.assign(this.state, this.balanceUnits());
-
     this.player.update(this);
   }
 
   destruct(){
-    this.homeTile.population += this.population;
     this.tile.food += this.totalFoodLoad;
-    MetaGameObject.prototype.deregister();
+    this.deregister();
   }
 
   deregister(){
     this.player._unresolved.delete(this);
-    MetaGameObject.prototype.deregister();
+    MetaGameObject.prototype.deregister.call(this);
   }
+
 
   dispatch(action){
     if (this.actionQueue?.[0]?.type !== action?.type)
       this.clearActions();
 
     MetaGameObject.prototype.dispatch.call(this, action, () => {
-      if (['camp', 'action'].includes(action.type))
+      if (
+        [ UnitActions.CAMP, 
+          UnitActions.ACTION, 
+          UnitActions.ADD_MOVEPOINTS
+        ].includes(action.type)
+      )
         this.updatePaths();
+        
       this.balanceUnits.call(this);
     });
+  }
+
+  weakDispatch(action){
+    return this.dispatch({...action, nextCommand: this.state.nextCommand});
   }
   
   get originalState(){ return this._originalState; }
@@ -63,10 +75,21 @@ export class Unit extends MetaGameObject{
   get battleUnits(){ return this.state.battleUnits; }
   get logisticUnits(){ return this.state.logisticUnits; }
   get totalUnits(){ return this.logisticUnits + this.battleUnits; }
+  get foodLoads(){ return this.state.foodLoads; }
   get experience(){ return this.state.experience; }
   get pandemicStage(){ return this.state.pandemicStage; }
   get tirednessLevel(){ return this.state.tirednessLevel; }
-  get hungerLevel(){ return this.state.totalHunger / this.state.battleUnits; }
+  get hungers(){ return this.state.hungers; }
+  get battleUnitHunger(){ return this.hungers.battleUnits; }
+  get battleUnitHungerLevel(){ 
+    return this.battleUnits === 0 ? 0 :
+      this.battleUnitHunger / this.battleUnits;
+  }
+  get logisticUnitHunger(){ return this.hungers.logisticUnits; }
+  get logisticUnitHungerLevel(){
+    return this.logisticUnits === 0 ? 0 :
+      this.logisticUnitHunger / this.logisticUnits;
+  }
   get morality(){ return this.state.morality; }
   get movePoints(){ return this.state.movePoints; }
   get nextCommand(){ return this.state.nextCommand; }
@@ -76,7 +99,11 @@ export class Unit extends MetaGameObject{
     return !this.moveable || this.actionQueue.length > 0 || !!this.nextCommand
   }
   get overallWearinessLevel(){
-    return 1 + Math.max(0, this.tirednessLevel - 1) + Math.max(0, this.hungerLevel - 1) + Math.max(0, this.pandemicStage - 1) ** 0.5 / 4;
+    return (
+      1 + Math.max(0, this.tirednessLevel - 1) + 
+      Math.max(0, this.battleUnitHungerLevel - 1) + 
+      Math.max(0, this.pandemicStage - 1) ** 0.5 / 4
+    );
   }
   get staminaLevel(){ return 1 / this.overallWearinessLevel; }
   get formation(){ return this.state.formation; }
@@ -90,6 +117,7 @@ export class Unit extends MetaGameObject{
   camp(...args){ return UnitActions.camp.call(this, ...args); }
   action(...args){ return UnitActions.action.call(this, ...args); }
   pillage(){ return UnitActions.pillage.call(this); }
+  endTurn(){ return UnitActions.endTurn.call(this); }
 
   getNaturalFormation(tile){
     let {x, y} = tile;
@@ -105,7 +133,9 @@ export class Unit extends MetaGameObject{
         "battle units": this.battleUnits,
         "total units": this.totalUnits,
         experience: approximate(this.experience),
-        hunger: this.hungerLevel,
+        hunger: this.battleUnitHungerLevel,
+        "food (in camp)": this.foodLoads.camp,
+        "food (with battle units)": this.foodLoads.battleUnits,
         stamina: this.staminaLevel,
         morality: this.morality,
         pandemic: this.pandemicStage,
@@ -133,7 +163,7 @@ export class Unit extends MetaGameObject{
           return {skipResolve: true};
         }),
         pillage: moveable && this.pillage.bind(this),
-        disband: moveable && this.destruct.bind(this)
+        disarm: moveable && this.destruct.bind(this)
       }
     }
   }
@@ -147,15 +177,19 @@ export class Unit extends MetaGameObject{
       (this.overallWearinessLevel ** 0.5);
   }
 
-  calculatePathToClosestHomeCity(sourceTile = this.tile){
+  calculatePathToClosestHomeCity(sourceTile = this.tile, ...args){
     return sourceTile.bfs(
       tile => tile.city && tile.city.player === this.player && 
         (tile.city.foodStorage >= this.totalUnits || tile.city === this.homeTile),
       tile => !tile.hasEnemy(this),
+      ...args
     ) || this.calculatePathToHomeCityFromCamp();
   }
   calculatePathToClosestHomeCityFromCamp(){
-    return this.calculatePathToClosestHomeCity(this.campTile);
+    return this.calculatePathToClosestHomeCity(
+      this.campTile,
+      { maxCostDistance: 15 }
+    );
   }
   calculatePathToHomeCityFromCamp(sourceTile = this.tile){
     return this.campTile.aStarSearch(
@@ -278,68 +312,108 @@ export class Unit extends MetaGameObject{
     this._closestHomeCity = this.pathToClosestHomeCityFromCamp.slice(-1)[0].city;
   }
 
-  endTurn(){
-    if (this.movePoints >= 0){
-      this.dispatch(this.actionQueue.shift());
+  // endTurn(){
+  //   if (this.movePoints >= 0){
+  //     this.dispatch(this.actionQueue.shift());
 
-      let {type, cancelCondition, ...args} = this.nextCommand || {};
-      this[type]?.(...Object.values(args));
-    }
+  //     let {type, cancelCondition, ...args} = this.nextCommand || {};
+  //     this[type]?.(...Object.values(args));
+  //   }
 
-    const state = this.state;
+  //   const state = this.state;
     
-    state.movePoints = Math.min(1, this.movePoints + 2);
-    this.updatePaths();
+  //   state.movePoints = Math.min(1, this.movePoints + 2);
+  //   this.updatePaths();
 
-    const hungerLevel = this.hungerLevel;
+  //   const {battleUnitHungerLevel, logisticUnitHungerLevel} = this;
 
-    // calculate death
-    const isPandemic = Math.random() <= this.calculatePandemicPossibility();
-    const baseCasualtyRate = Math.random() * (
-      1 + state.pandemicStage
-    ) / 64;
+  //   // calculate death
+  //   const isPandemic = Math.random() <= this.calculatePandemicPossibility();
+  //   const baseCasualtyRate = Math.random() * (
+  //     1 + state.pandemicStage
+  //   ) / 64;
+  //   const battleUnitCasualtyRate = Math.min(
+  //     baseCasualtyRate + Math.random() * (
+  //       Math.max(battleUnitHungerLevel - 1, 0) ** 2 +
+  //       Math.max(state.tirednessLevel / 4 - 1, 0) ** 2
+  //     ) / 16,
+  //     1
+  //   );
+  //   const logisticUnitCasualtyRate = Math.min(
+  //     baseCasualtyRate +
+  //     Math.random() * ( Math.max(logisticUnitHungerLevel - 1, 0) ** 2 ) / 16
+  //   );
+  //   const battleUnitCasualties = Math.round(
+  //     battleUnitCasualtyRate * state.battleUnits
+  //   );
+  //   const logisticUnitCasualties = Math.round(
+  //     logisticUnitCasualtyRate * state.logisticUnits
+  //   );
+  //   const totalCasualties = battleUnitCasualties + logisticUnitCasualties;
 
-    const battleUnitCasualtyRate = Math.min(
-      baseCasualtyRate + Math.random() * (
-        Math.max(this.hungerLevel - 1, 0) ** 2 +
-        Math.max(state.tirednessLevel / 4 - 1, 0) ** 2
-      ) / 16,
-      1
-    );
+  //   state.pandemicStage = Math.max(0, state.pandemicStage + (isPandemic ? 1 : -1) );
+  //   state.battleUnits -= battleUnitCasualties;
+  //   state.logisticUnits -= logisticUnitCasualties;
 
-    state.pandemicStage = Math.max(0, state.pandemicStage + (isPandemic ? 1 : -1) );
-    state.battleUnits -= battleUnitCasualtyRate * state.battleUnits | 0;
-    state.logisticUnits -= baseCasualtyRate * state.logisticUnits | 0;
+  //   if (this.totalUnits <= 0)
+  //     this.destruct();
 
-    // consume food
-    this._closestHomeCity.storage.food -= this.battleUnits;
-    const battleUnitFoodConsumption = Math.min(state.battleUnits, state.foodLoads.battleUnits);
-    
-    state.totalHunger = Math.min(
-      state.battleUnits * (hungerLevel + 1) - battleUnitFoodConsumption,
-      5 * state.battleUnits
-    );
+  //   // consume food
+  //   const totalFoodConsumption = Math.min(
+  //      this._closestHomeCity.foodStorage + state.foodLoads.battleUnits,
+  //      this.totalUnits
+  //   );
+  //   const {battleUnits, logisticUnits, totalUnits} = this;
 
-    if (state.campTile !== this.tile){
-      state.foodLoads.battleUnits -= battleUnitFoodConsumption;
-      state.foodLoads.camp += battleUnitFoodConsumption;
-    } else {
-      const maxFoodLoadDiff = Math.min(
-        state.battleUnits * 5 - state.foodLoads.battleUnits,
-        state.foodLoads.camp
-      );
+  //   this._closestHomeCity.storage.food -= totalFoodConsumption;
 
-      state.foodLoads.battleUnits += maxFoodLoadDiff;
-      state.foodLoads.camp -= maxFoodLoadDiff;
-    }
-  }
+  //   const battleUnitFoodConsumption = Math.min(
+  //     totalFoodConsumption * battleUnits / totalUnits,
+  //     battleUnits,
+  //     state.foodLoads.battleUnits
+  //   ) | 0;
+
+  //   const logisticUnitFoodConsumption = Math.min(
+  //     totalFoodConsumption * logisticUnits / totalUnits,
+  //     logisticUnits
+  //   ) | 0;
+
+  //   state.hungers = {
+  //     battleUnits: battleUnits * Math.max(
+  //       Math.min(
+  //         (battleUnitHungerLevel + 1) - battleUnitFoodConsumption / battleUnits,
+  //         5
+  //       ), 0
+  //     ) | 0,
+  //     logisticUnits: logisticUnits * Math.max(
+  //       Math.min(
+  //         (logisticUnitCasualtyRate + 1) - logisticUnitFoodConsumption / logisticUnits,
+  //         5
+  //       ), 0
+  //     ) | 0
+  //   }
+
+  //   if (state.campTile !== this.tile){
+  //     state.foodLoads.battleUnits -= battleUnitFoodConsumption;
+  //     state.foodLoads.camp += battleUnitFoodConsumption;
+  //   } else {
+  //     const maxFoodLoadDiff = Math.min(
+  //       state.battleUnits * 5 - state.foodLoads.battleUnits,
+  //       state.foodLoads.camp
+  //     );
+
+  //     state.foodLoads.battleUnits += maxFoodLoadDiff;
+  //     state.foodLoads.camp -= maxFoodLoadDiff;
+  //   }
+  // }
 
   getValidCampPath(destinationTile){
     this.player.updateAccessibleTiles(this.homeCity);
 
     return this.tile.aStarSearch(
       destinationTile, 
-      tile => 
+      (tile, costDistance) => 
+        costDistance < 15 &&
         this.player.accessibleTiles.has(tile) &&
         (!tile.camp && !(tile.city && tile.city.player !== this.player) ) &&
         

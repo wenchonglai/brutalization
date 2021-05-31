@@ -1,5 +1,5 @@
 export default class MetaGameObject{
-  constructor({player, tile, state}){
+  constructor({player, tile, state} = {}){
     this._state = {...state};
     this._actionQueue = [];
     this.campTile?.registerCamp(this);
@@ -16,7 +16,7 @@ export default class MetaGameObject{
   }
 
   deregister(){
-    if (this.game.gameObject === this)
+    if (this.game?.gameObject === this)
       this.game.focus(Array.from(this.player._unresolved)[0]);
 
     this.tile?.deregister(this);

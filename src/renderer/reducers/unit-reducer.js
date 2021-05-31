@@ -1,10 +1,12 @@
+import * as UnitActions from "../../actions/unit-actions.js"
+
 export default function unitActionReducer(state, action){
   Object.freeze(state);
 
   const newState = {...state};
 
   newState.nextCommand = action.nextCommand;
-
+    
   /* User commands */
   // rest:    add action to action queue; next command is still rest; clear action queue if no food or tireness is 0
   //          cannot rest if camp tile is not current tile
@@ -14,20 +16,22 @@ export default function unitActionReducer(state, action){
   //          else: move to the target tile immediately; next command is still camp until reaching the destination
   // action:    cancel if 1) enemy is spotted in the surrounding; 2) destination is reached; or 3) food is barely enough to go back to camptile and destination tile is not camptile
   //          else: move to the target tile immediately; next command is still camp 
-  
-  switch (action.type){
-    case 'rest': {
+
+  switch (action.type?.toUpperCase()){
+    case UnitActions.REST: {
       newState.movePoints -= 2;
       newState.tirednessLevel -= 1;
       return newState;
     };
-    case 'guard': {
+    case UnitActions.GUARD: {
       newState.movePoints -= 2;
       newState.tirednessLevel -= 0.5;
       newState.experience += Math.random() / 8;
-      return {...newState, formation: action.formation};
+      return {...newState, 
+        formation: action.formation
+      };
     }
-    case 'camp': {
+    case UnitActions.CAMP: {
       this.register({tile: action.targetTile});
       
       newState.movePoints -= action.costDistance;
@@ -38,13 +42,12 @@ export default function unitActionReducer(state, action){
         newState.morality -= 0.125 * action.costDistance * this.overallWearinessLevel;
         this.registerCamp(action.targetTile);
 
-      return {
-        ...newState, 
+      return {...newState, 
         campTile: action.targetTile,
         formation: action.formation
       };
     }
-    case 'pillage': {
+    case UnitActions.PILLAGE: {
       newState.movePoints -= 2;
       newState.tirednessLevel += 0.125;
 
@@ -58,9 +61,10 @@ export default function unitActionReducer(state, action){
 
       return newState;
     }
-    case 'action': {
+    case UnitActions.ACTION: {
       this.register({tile: action.targetTile});
 
+      newState.foodLoads = action.foodLoads;
       newState.movePoints -= action.costDistance;
       newState.tirednessLevel += 0.25 * action.costDistance;
       newState.morality -= 0.25 * this.overallWearinessLevel;
@@ -71,7 +75,7 @@ export default function unitActionReducer(state, action){
 
       return newState;
     }
-    case 'battle': {
+    case UnitActions.BATTLE: {
       newState.movePoints -= action.movePoints ?? 2;
       newState.tirednessLevel += 1;
       newState.morality += action.morality;
@@ -80,6 +84,22 @@ export default function unitActionReducer(state, action){
       newState.battleUnits -= action.casualty;
 
       return newState;
+    }
+    case UnitActions.ADD_MOVEPOINTS: {
+      newState.movePoints = Math.min(1, state.movePoints + 2);
+      return newState;
+    }
+    case UnitActions.RECEIVE_CASUALTIES: {
+      const {isPandemic, battleUnitCasualties, logisticUnitCasualties} = action;
+
+      return {...newState,
+        pandemicStage: Math.max(0, state.pandemicStage + (isPandemic ? 1 : -1) ),
+        battleUnits: state.battleUnits - battleUnitCasualties,
+        logisticUnits: state.logisticUnits - logisticUnitCasualties
+      }
+    }
+    case UnitActions.RECEIVE_FOOD_CHANGE: {
+      return {...newState, ...action.data}
     }
     default: {
       return newState;
