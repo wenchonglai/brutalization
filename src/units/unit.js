@@ -224,7 +224,7 @@ export class Unit extends MetaGameObject{
     return ((1 + this.experience) ** 0.5) * this.calculateMoralityBonus() / 64;
   }
   
-  get isDenselyFormed(){ !!this.formation?.every(el => el === 0); }
+  get isDenselyFormed(){ return !!this.formation?.every(el => el === 0); }
 
   _calculatechargeTime(formation1, formation2, attackMode = false){
     const isDenselyFormed1 = formation1.isDenselyFormed;
@@ -311,101 +311,6 @@ export class Unit extends MetaGameObject{
     this._pathToDestination = this.calculatePathToDestination();
     this._closestHomeCity = this.pathToClosestHomeCityFromCamp.slice(-1)[0].city;
   }
-
-  // endTurn(){
-  //   if (this.movePoints >= 0){
-  //     this.dispatch(this.actionQueue.shift());
-
-  //     let {type, cancelCondition, ...args} = this.nextCommand || {};
-  //     this[type]?.(...Object.values(args));
-  //   }
-
-  //   const state = this.state;
-    
-  //   state.movePoints = Math.min(1, this.movePoints + 2);
-  //   this.updatePaths();
-
-  //   const {battleUnitHungerLevel, logisticUnitHungerLevel} = this;
-
-  //   // calculate death
-  //   const isPandemic = Math.random() <= this.calculatePandemicPossibility();
-  //   const baseCasualtyRate = Math.random() * (
-  //     1 + state.pandemicStage
-  //   ) / 64;
-  //   const battleUnitCasualtyRate = Math.min(
-  //     baseCasualtyRate + Math.random() * (
-  //       Math.max(battleUnitHungerLevel - 1, 0) ** 2 +
-  //       Math.max(state.tirednessLevel / 4 - 1, 0) ** 2
-  //     ) / 16,
-  //     1
-  //   );
-  //   const logisticUnitCasualtyRate = Math.min(
-  //     baseCasualtyRate +
-  //     Math.random() * ( Math.max(logisticUnitHungerLevel - 1, 0) ** 2 ) / 16
-  //   );
-  //   const battleUnitCasualties = Math.round(
-  //     battleUnitCasualtyRate * state.battleUnits
-  //   );
-  //   const logisticUnitCasualties = Math.round(
-  //     logisticUnitCasualtyRate * state.logisticUnits
-  //   );
-  //   const totalCasualties = battleUnitCasualties + logisticUnitCasualties;
-
-  //   state.pandemicStage = Math.max(0, state.pandemicStage + (isPandemic ? 1 : -1) );
-  //   state.battleUnits -= battleUnitCasualties;
-  //   state.logisticUnits -= logisticUnitCasualties;
-
-  //   if (this.totalUnits <= 0)
-  //     this.destruct();
-
-  //   // consume food
-  //   const totalFoodConsumption = Math.min(
-  //      this._closestHomeCity.foodStorage + state.foodLoads.battleUnits,
-  //      this.totalUnits
-  //   );
-  //   const {battleUnits, logisticUnits, totalUnits} = this;
-
-  //   this._closestHomeCity.storage.food -= totalFoodConsumption;
-
-  //   const battleUnitFoodConsumption = Math.min(
-  //     totalFoodConsumption * battleUnits / totalUnits,
-  //     battleUnits,
-  //     state.foodLoads.battleUnits
-  //   ) | 0;
-
-  //   const logisticUnitFoodConsumption = Math.min(
-  //     totalFoodConsumption * logisticUnits / totalUnits,
-  //     logisticUnits
-  //   ) | 0;
-
-  //   state.hungers = {
-  //     battleUnits: battleUnits * Math.max(
-  //       Math.min(
-  //         (battleUnitHungerLevel + 1) - battleUnitFoodConsumption / battleUnits,
-  //         5
-  //       ), 0
-  //     ) | 0,
-  //     logisticUnits: logisticUnits * Math.max(
-  //       Math.min(
-  //         (logisticUnitCasualtyRate + 1) - logisticUnitFoodConsumption / logisticUnits,
-  //         5
-  //       ), 0
-  //     ) | 0
-  //   }
-
-  //   if (state.campTile !== this.tile){
-  //     state.foodLoads.battleUnits -= battleUnitFoodConsumption;
-  //     state.foodLoads.camp += battleUnitFoodConsumption;
-  //   } else {
-  //     const maxFoodLoadDiff = Math.min(
-  //       state.battleUnits * 5 - state.foodLoads.battleUnits,
-  //       state.foodLoads.camp
-  //     );
-
-  //     state.foodLoads.battleUnits += maxFoodLoadDiff;
-  //     state.foodLoads.camp -= maxFoodLoadDiff;
-  //   }
-  // }
 
   getValidCampPath(destinationTile){
     this.player.updateAccessibleTiles(this.homeCity);

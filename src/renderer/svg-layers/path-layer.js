@@ -10,9 +10,9 @@ const PATHFINDER_COLORS = {
 }
 
 const DESTINATION_INDICATOR_COLORS = {
-  camp: "#dfdfdf",
-  action: "#ffbf00",
-  attack: "#df7f7f",
+  CAMP: "#dfdfdf",
+  ACTION: "#ffbf00",
+  ATTACK: "#df7f7f",
 }
 
 export default class PathLayer extends MetaLayer{

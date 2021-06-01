@@ -19,3 +19,7 @@ export default class AIPlayer extends Player{
     this.endTurn();
   }
 }
+
+// 秦：假设最近城市所在国为A，则对A宣战
+// 赵：假设最近城市所在国为A，且赵在该最近城市附近兵力有双倍优势，则对A宣战
+// 韩：假设最近城市所在国为A，A被B攻击，且韩与B的人口总和大于A时，则对A宣战
