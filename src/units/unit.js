@@ -97,13 +97,13 @@ export class Unit extends MetaGameObject{
   get morality(){ return this.state.morality; }
   get movePoints(){ return this.state.movePoints; }
   get nextCommand(){ return this.state.nextCommand; }
+  get destination(){  return this.nextCommand?.destinationTile; }
   get population(){ return this.battleUnits + this.logisticUnits; }
   get moveable(){ return this.movePoints >= 0; }
   get tasked(){ 
     return !this.moveable || this.actionQueue.length > 0 || !!this.nextCommand
   }
   get overallWearinessLevel(){
-    console.log(this.tirednessLevel)
     return (
       1 + Math.max(0, this.tirednessLevel - 1) + 
       Math.max(0, this.battleUnitHungerLevel - 1) + 
@@ -125,7 +125,6 @@ export class Unit extends MetaGameObject{
   pillage(){ return UnitActions.pillage.call(this); }
   endTurn(){ return UnitActions.endTurn.call(this); }
   
-  isEnemy(gameObject){ return this.player.isEnemy(gameObject); }
   getNaturalFormation(tile){
     let {x, y} = tile;
     return [x - this.x, y - this.y];
@@ -147,7 +146,8 @@ export class Unit extends MetaGameObject{
         morality: this.morality,
         pandemic: this.pandemicStage,
         movePoints: this.movePoints,
-        formation: this.formation
+        formation: this.formation,
+        "next command": this.nextCommand?.type ?? ""
       },
       commands: {
         rest: moveable && this.rest.bind(this),
@@ -329,10 +329,9 @@ export class Unit extends MetaGameObject{
         costDistance < 15 &&
         this.player.accessibleTiles.has(tile) &&
         (!tile.camp && !(tile.city && tile.city.player !== this.player) ) &&
-        
         (!tile.hasUnit || this.tile === destinationTile ) ||
         tile == this.campTile || tile == this.tile
-    )
+    );
   }
 
   getValidActionPath(destinationTile){

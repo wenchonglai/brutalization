@@ -57,16 +57,17 @@ export default class MetaGameObject{
   get actionQueue(){ return this._actionQueue; }
   get action(){ return this.actionQueue[0]; }
   get enemySpotted(){
-    return this.tile.getAdjacentTiles().some(tile =>
-      tile.hasEnemy(this)
-    );
+    const enemies = new Set();
+
+    for (let tile of this.tile.getAdjacentTiles())
+      for (let unit of tile.units)
+        if (unit.isEnemy(this) || unit.destination == this.tile)
+          enemies.add(unit);
+
+    return enemies.size > 0 ? enemies : false;
   }
 
-  _hasCertainGameObject(gameObject, callback){
-    return this.units.size === 0 ? false :
-      Array.from(this.units).some(callback);
-  }
-
+  isEnemy(gameObject){ return this.player.isEnemy(gameObject); }
   getClosestEnemy({maxCostDistance = 15}){
     return this.tile.bfs(
       tile => tile.hasEnemy(this),

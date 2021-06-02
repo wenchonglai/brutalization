@@ -7,6 +7,7 @@ export const ACTION = 'ACTION';
 export const ADD_MOVEPOINTS = 'ADD_MOVEPOINTS';
 export const RECEIVE_CASUALTIES = 'RECEIVE_CASUALTIES';
 export const RECEIVE_FOOD_CHANGE = 'RECEIVE_FOOD_CHANGE';
+export const CANCEL_ACTION = 'CANCEL_ACTION';
 
 export function rest(){ 
   this.saveAction({
@@ -92,10 +93,16 @@ export function action(destinationTile, formation, path){
 
   if (!targetTile) return;
   
-  if (targetTile.hasOther()){
+  if (targetTile.hasOther())
     for (let unit of targetTile.units)
-      this.player.declareWar(unit.player);
-  }
+      if (!unit.isEnemy(this))
+        if (targetTile == destinationTile){
+          this.player.declareWar(unit.player);
+        } else {
+          this.dispatch({type: CANCEL_ACTION});
+          return;
+        }
+
   let enemy = targetTile.getEnemy(this);
 
   if (targetTile === destinationTile && enemy){
@@ -119,7 +126,6 @@ export function action(destinationTile, formation, path){
     if (tolerableCasualty1 / militaryMight2 > tolerableCasualty2 / militaryMight1 ){
       casualty1 = tolerableCasualty1 | 0;
       casualty2 = tolerableCasualty1 * militaryMight1 / militaryMight2 | 0;
-      
     } else {
       casualty2 = tolerableCasualty2 | 0;
       casualty1 = tolerableCasualty2 * militaryMight2 / militaryMight1 | 0;

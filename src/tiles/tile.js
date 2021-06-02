@@ -74,7 +74,7 @@ export default class Tile extends MetaGeography{
   get player(){ return this._player; }
 
   hasOther(gameObject){
-    return this._hasCertainGameObject(
+    return this._hasCertainUnit(
       gameObject,
       unit => 
         unit.player.id !== (gameObject?.player ?? gameObject)?.id
@@ -82,7 +82,7 @@ export default class Tile extends MetaGeography{
   }
 
   hasEnemy(gameObject){
-    return this._hasCertainGameObject(
+    return this._hasCertainUnit(
       gameObject,
       unit => unit.isEnemy(gameObject)
     );

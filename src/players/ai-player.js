@@ -2,20 +2,28 @@ import Player from "./player.js";
 
 export default class AIPlayer extends Player{
   async promptAction(){
+    const entities = new Set([
+      ...Array.from(this.cities),
+      ...Array.from(this.units)
+    ]);
+
+    for (let entity of entities)
+      for (let unit of entity.enemySpotted || [])
+        if (!this.isEnemy(unit))
+          this.declareWar(unit.player);
+    
     for (let city of this.cities){
       for (
         let i = (city.totalPopulations.military + 2499) / 2500 | 0; 
         i < (city.population / 1000 | 0); 
         i ++
-      ){
-        city.draft();
-      }
+      ) city.draft();
     }
 
 
     for (let unit of this.units){
       unit.rest();
-
+      console.log(this.enemySpotted);
       // battle tactic
       // 1 detect closest enemy unit to home city
       //  1.1 if home city is empty

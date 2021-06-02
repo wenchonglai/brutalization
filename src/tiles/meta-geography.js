@@ -8,6 +8,15 @@ export default class MetaGeography extends MetaGameObject{
   get militaryPopulation(){ return this.populations.military; }
   get draftLevel(){ return this.militaryPopulation / this.population; }
 
+  _hasCertainUnit(gameObject, callback){
+    const set = new Set(
+      Array.from(this.units)  
+        .filter(callback)
+    );
+
+    return set.size === 0 ? false : set;
+  }
+
   grow(){
     // increase population
     let civilian = this.populations.civilian;
@@ -15,4 +24,6 @@ export default class MetaGeography extends MetaGameObject{
     civilian += civilian * POPULATION_GROWTH_RATE | 0;
     Object.assign(this._populations, {civilian});
   }
+
+
 }
