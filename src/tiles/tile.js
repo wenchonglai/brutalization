@@ -73,19 +73,25 @@ export default class Tile extends MetaGeography{
   get hasUnit(){ return this.units.size > 0; }
   get player(){ return this._player; }
 
-  hasEnemy(gameObject){
-    if (this.units.size === 0)
-      return false;
+  hasOther(gameObject){
+    return this._hasCertainGameObject(
+      gameObject,
+      unit => 
+        unit.player.id !== (gameObject?.player ?? gameObject)?.id
+    );
+  }
 
-    return Array.from(this.units)
-      .some(unit => unit.player.id !== (gameObject?.player ?? gameObject)?.id);
+  hasEnemy(gameObject){
+    return this._hasCertainGameObject(
+      gameObject,
+      unit => unit.isEnemy(gameObject)
+    );
   }
 
   getEnemy(gameObject){
-    for (let unit of Array.from(this.units)){
-      if (unit.player !== gameObject.player)
+    for (let unit of Array.from(this.units))
+      if (unit.isEnemy(gameObject))
         return unit;
-    }
   }
 
   getEuclideanDistance(tile){

@@ -1,8 +1,12 @@
 export default class MetaGameObject{
-  constructor({player, tile, state} = {}){
+  constructor({player, tile, state, ...args} = {}){
     this._state = {...state};
     this._actionQueue = [];
     this.campTile?.registerCamp(this);
+
+    for (let key of Object.keys(args))
+      this[`_${key}`] = args[key];
+
     this.register({player, tile});
   }
 
@@ -52,4 +56,22 @@ export default class MetaGameObject{
   get y(){ return this.tile.y; }
   get actionQueue(){ return this._actionQueue; }
   get action(){ return this.actionQueue[0]; }
+  get enemySpotted(){
+    return this.tile.getAdjacentTiles().some(tile =>
+      tile.hasEnemy(this)
+    );
+  }
+
+  _hasCertainGameObject(gameObject, callback){
+    return this.units.size === 0 ? false :
+      Array.from(this.units).some(callback);
+  }
+
+  getClosestEnemy({maxCostDistance = 15}){
+    return this.tile.bfs(
+      tile => tile.hasEnemy(this),
+      () => true,
+      {maxCostDistance}
+    );
+  }
 }

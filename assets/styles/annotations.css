@@ -5,7 +5,7 @@ div.annotation{
   background-color: #cfcfcf;
   user-select: none;
   transform-origin: 50% 44px;
-  transform: translate(-50%, -60px) scale(0.8);
+  transform: translate(-50%, -70px) scale(0.8);
   text-align: center;
   font-size: 22px;
   line-height: 36px;
@@ -66,6 +66,10 @@ div.annotation:hover, div.unit-annotation:hover::before{
   border-color: #dfdfdf;
 }
 
+div.annotation-wrapper.active {
+  position: absolute;
+  z-index: 9999 !important;
+}
 div.annotation-wrapper.active > div.annotation,
 div.annotation-wrapper.active > div.unit-annotation::before{
   border-color: #ffffff;
@@ -74,7 +78,6 @@ div.annotation-wrapper.active > div.unit-annotation::before{
 
 div.annotation-wrapper.active > div.annotation {
   opacity: 1;
-  z-index: 9999 !important;
 }
 
 div.annotation-wrapper.active > div.unit-annotation {

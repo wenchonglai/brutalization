@@ -62,80 +62,75 @@ export default class Game{
       for (let y = 0; y < this.mapSize; y++)
         new Tile({x, y});
 
-    const cityOfAnyi = new City({
-      player: this.currentPlayer, 
-      tile: Tile.getTile({x: 7, y: 6}), 
-      population: 5000
-    });
+    const cities = [
+      new City({  // AnYi
+        player: this.currentPlayer, 
+        tile: Tile.getTile({x: 7, y: 5}), 
+        population: 5000,
+      }),
+      // new City({  // YangDi
+      //   player: this.players[3],
+      //   tile: Tile.getTile({x: 9, y: 9}), 
+      //   population: 3000
+      // }),
+      // new City({  // YeWang
+      //   player: this.players[3],
+      //   tile: Tile.getTile({x: 9, y: 6}), 
+      //   population: 4000,
+      //   name: 'YeWang'
+      // }),
+      // new City({  // XinZheng
+      //   player: this.players[3],
+      //   tile: Tile.getTile({x: 10, y: 8}), 
+      //   population: 4000,
+      //   name: 'XinZheng'
+      // }),
+      // new City({ // Daliang
+        // player: this.currentPlayer,
+        // tile: Tile.getTile({x: 11, y: 7}), 
+        // population: 6000
+      // }),
+      // new City({ // Ye
+        // player: this.currentPlayer,
+        // tile: Tile.getTile({x: 12, y: 5}), 
+        // population: 5000
+      // }),
+      // new City({ // Yong
+        // player: this.players[1], 
+        // tile: Tile.getTile({x: 1, y: 6}), 
+        // population: 4000
+      // }),
+      new City({ // YueYang
+        player: this.players[1], 
+        tile: Tile.getTile({x: 4, y: 6}), 
+        population: 3000,
+        name: "YueYang"
+      }),
+      // new City({ // Shan
+        // player: this.players[1], 
+        // tile: Tile.getTile({x: 6, y: 7}), 
+        // population: 3000
+      // }),
+      // new City({ // Jinyang
+        // player: this.players[2],
+        // tile: Tile.getTile({x: 8, y: 2}), 
+        // population: 4000
+      // }),
+      // new City({ // Zhongmou
+        // player: this.players[2],
+        // tile: Tile.getTile({x: 11, y: 4}), 
+        // population: 3500
+      // }),
+      // new City({ // Handan
+        // player: this.players[2],
+        // tile: Tile.getTile({x: 12, y: 3}), 
+        // population: 3500
+      // })
+    ];
 
-    const cityOfYangdi = new City({
-      player: this.players[3],
-      tile: Tile.getTile({x: 9, y: 11}), 
-      population: 3000
-    });
-
-    const cityOfYewang = new City({
-      player: this.players[3],
-      tile: Tile.getTile({x: 9, y: 7}), 
-      population: 3000
-    });
-
-    const cityOfXinzheng = new City({
-      player: this.players[3],
-      tile: Tile.getTile({x: 10, y: 9}), 
-      population: 3000
-    });
-
-    const cityOfDaliang = new City({
-      player: this.currentPlayer,
-      tile: Tile.getTile({x: 11, y: 8}), 
-      population: 6000
-    });
-
-    const cityOfYe = new City({
-      player: this.currentPlayer,
-      tile: Tile.getTile({x: 12, y: 5}), 
-      population: 3000
-    });
-
-    const cityOfYong = new City({
-      player: this.players[1], 
-      tile: Tile.getTile({x: 1, y: 7}), 
-      population: 4000
-    });
-
-    const cityOfYueYang = new City({
-      player: this.players[1], 
-      tile: Tile.getTile({x: 4, y: 7}), 
-      population: 3000
-    });
-
-    const cityOfShan = new City({
-      player: this.players[1], 
-      tile: Tile.getTile({x: 6, y: 8}), 
-      population: 3000
-    });
-
-    const cityOfJinyang = new City({
-      player: this.players[2],
-      tile: Tile.getTile({x: 8, y: 2}), 
-      population: 4000
-    });
-
-    const cityOfZhongmou = new City({
-      player: this.players[2],
-      tile: Tile.getTile({x: 11, y: 4}), 
-      population: 3000
-    });
-
-    const cityOfHandan = new City({
-      player: this.players[2],
-      tile: Tile.getTile({x: 12, y: 3}), 
-      population: 3000
-    });
-
-    for (let i = 0; i < 6; i++)
-      cityOfAnyi.draft();
+    for (let city of cities)
+      for (let i = 0; i < (city.population / 1000 | 0); i++)
+        city.draft();
 
   }
 

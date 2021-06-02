@@ -20,7 +20,7 @@ export default function unitActionReducer(state, action){
   switch (action.type?.toUpperCase()){
     case UnitActions.REST: {
       newState.movePoints -= 2;
-      newState.tirednessLevel -= 1;
+      newState.tirednessLevel = Math.max(0, newState.tirednessLevel - 1);
       return newState;
     };
     case UnitActions.GUARD: {
@@ -64,6 +64,7 @@ export default function unitActionReducer(state, action){
     case UnitActions.ACTION: {
       this.register({tile: action.targetTile});
 
+      newState.formation = action.formation;
       newState.foodLoads = action.foodLoads;
       newState.movePoints -= action.costDistance;
       newState.tirednessLevel += 0.25 * action.costDistance;
@@ -81,7 +82,6 @@ export default function unitActionReducer(state, action){
       newState.morality += action.morality;
       newState.battleUnits -= action.casualty;
       newState.experience += Math.random() * 3;
-      newState.battleUnits -= action.casualty;
 
       return newState;
     }

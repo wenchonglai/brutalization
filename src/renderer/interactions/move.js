@@ -63,7 +63,6 @@ function handleMouseMoveCreator(mode){
     }
     
     if (e.metaKey){
-
       if (dx ** 2 + dy ** 2 >= 0.16){
         const absAtan = Math.abs(Math.atan2(dx, dy)) * 8 / Math.PI;
         fx = dx / Math.abs(dx);
@@ -71,7 +70,6 @@ function handleMouseMoveCreator(mode){
         if (absAtan < 1 || absAtan > 7) fx = 0;
         if (absAtan > 3 && absAtan < 5) fy = 0;
       }
-      console.log(fx, fy)
       this.mapSVG.setFormation(fx, fy);
     } else {
       defaultDrag.call(this, e);

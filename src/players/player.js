@@ -8,6 +8,7 @@ export default class Player{
     this._color = color;
     this._units = new Set();
     this._cities = new Set();
+    this._attitudes = new Map();
     this._viewport = {x: 0, y: 0};
     this._selected = undefined;
     this._isTurn = true;
@@ -15,13 +16,33 @@ export default class Player{
   get id(){ return this._id; }
   get game(){ return this._game; }
   get color(){ return this._color; }
-
+  get attitudes(){ return this._attitudes; }
   get cities(){ return this._cities; }
   get units(){ return this._units; }
   get viewport(){ return this._viewport; }
   get selected(){ return this._selected; }
   get accessibleTiles(){ return this._accessibleTiles; } 
+  
+  isEnemy(obj){
+    let player = obj?.player || obj;
 
+    return this.attitudes.get(player) < 0;
+  }
+
+  getAttitude(obj){
+    let player = obj?.player || obj;
+
+    if (!this.attitudes.has(player))
+      this.setAttitude(player);
+    
+    return this.attitudes.get(player);
+  }
+
+  setAttitude(obj, val = 0){
+    let player = obj?.player || obj;
+
+    return this.attitudes.set(player, val);
+  }
 
   updateAccessibleTiles(...cities){
     const set = new Set();
@@ -29,7 +50,7 @@ export default class Player{
 
     for (let city of cities || this.cities){
       let subset = city.tile.bfs(
-        () => false, tile => !tile.hasEnemy(self),
+        () => false, tile => !tile.hasOther(self),
         {maxCostDistance: 15, returnAll: true}
       );
       
@@ -42,6 +63,7 @@ export default class Player{
   register(gameObject){
     gameObject._player = this;
 
+    
     if (gameObject instanceof Unit) this.units.add(gameObject)
     else if (gameObject instanceof City) this.cities.add(gameObject)
     else if (gameObject instanceof Improvement) this.improvements.add(gameObject);
@@ -101,6 +123,16 @@ export default class Player{
 
     this.deactivate();
     this.game.nextTurn();
+  }
+
+  declareWar(player){
+    this.setAttitude(player, -1);
+    player.setAttitude(this, -1);
+  }
+
+  negotiatePeace(player){
+    this.setAttitude(player, 0);
+    player.setAttitude(this, 0);
   }
 }
 

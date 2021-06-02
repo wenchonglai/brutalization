@@ -3,10 +3,12 @@ import { Unit } from "../units/unit.js";
 
 export const DRAFT = 'DRAFT';
 export const TRAIN = 'TRAIN';
+export const RECEIVE_CASUALTY = 'RECEIVE_CASUALTY';
 
 export function draft(){ 
   const tiles = [...this.tiles, this].sort((a, b) => a.draftLevel - b.draftLevel);
   const N = tiles.length;
+  
   let unitsToBeDrafted = [];
   let l = 0, r = N - 1;
   let totalUnitsToBeDrafted = 2500;
@@ -43,7 +45,6 @@ export function draft(){
         totalUnitsToBeDrafted / totalPopulations
       ) * tiles[i].population | 0
     );
-    
     const self = tiles[i];
     const toBeDrafted = Math.max(
       Math.min( self.civilianPopulation, delta ), 0
@@ -59,11 +60,14 @@ export function draft(){
     }
   }
 
+  this.player.update(this);
+
   if (this.tile.units.size > 0){
     for (let unit of this.tile.units){
       if (unit instanceof Unit){
         unit.state.battleUnits += actualUnitsDrafted;
         unit.state.foodLoads.camp += actualUnitsDrafted * 5;
+        unit.player.update(unit);
         break;
       }
     }
@@ -75,8 +79,36 @@ export function draft(){
       population: actualUnitsDrafted,
       formation: [0, 0]
     });
+    unit.player.update(unit);
   }
+}
 
+export function receiveCasualty(casualty){
+  const tiles = [...this.tiles, this].sort((a, b) => a.draftLevel - b.draftLevel);
+  const N = tiles.length;
+  const totalMilitary = tiles.reduce((acc, el) => acc + el.militaryPopulation, 0);
+
+  while (casualty > 0){
+    for (let tile of tiles){
+      let delta = Math.min(
+        Math.max(1, 
+          (casualty * tile.militaryPopulation / totalMilitary | 0)
+        ),
+        tile.militaryPopulation,
+        casualty
+      );
+
+      if (tile === this)
+        tile.dispatch({ type: RECEIVE_CASUALTY, casualty: delta });
+      else {
+        tile.populations.military -= delta;
+      }
+
+      casualty -= delta
+
+      if (casualty <= 0) break;
+    }
+  }
 }
 // draft(level){
 //     totalDraftedPopulation = 0;

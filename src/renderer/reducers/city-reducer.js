@@ -29,6 +29,9 @@ export default function cityActionReducer(state, action){
       newState.trainLevel = state.trainLevel + 1;
       return newState;
     };
+    case CityActions.RECEIVE_CASUALTY: {
+      newState.populations.military -= action.casualty;
+    }
     default: {
       return newState;
     }

@@ -6,27 +6,31 @@ import * as UnitActions from "../actions/unit-actions.js";
 
 export class Unit extends MetaGameObject{
   constructor({player, tile, homeTile = tile, campTile = tile, population = 0, experience = 0, formation = [0, 0]} = {}){
-    super({player, tile, state: {
-      battleUnits: population,
-      logisticUnits: 0 ,
-      unitsOnLeave: 0,
-      experience,
-      campTile: campTile,
-      tirednessLevel: 0, 
-      hungers: {
-        battleUnits: 0, 
-        logisticUnits: 0
-      },
-      morality: 0, pandemicStage: 0,
-      formation,
-      movePoints: 0,
-      foodLoads: {
-        battleUnits: 0,
-        camp: population * 5
+    super({player, tile, 
+      originalState: { tile: homeTile, population },
+      state: {
+        battleUnits: population,
+        logisticUnits: 0 ,
+        unitsOnLeave: 0,
+        experience,
+        campTile: campTile,
+        tirednessLevel: 0, 
+        hungers: {
+          battleUnits: 0, 
+          logisticUnits: 0
+        },
+        morality: 0, pandemicStage: 0,
+        formation,
+        movePoints: 0,
+        foodLoads: {
+          battleUnits: 0,
+          camp: population * 5
+        }
       }
-    }});
+    });
 
-    this._originalState = Object.freeze({ tile: homeTile, population });
+    Object.freeze(this._originalState);
+
     this._campTile = campTile;
     this.updatePaths();
     
@@ -99,6 +103,7 @@ export class Unit extends MetaGameObject{
     return !this.moveable || this.actionQueue.length > 0 || !!this.nextCommand
   }
   get overallWearinessLevel(){
+    console.log(this.tirednessLevel)
     return (
       1 + Math.max(0, this.tirednessLevel - 1) + 
       Math.max(0, this.battleUnitHungerLevel - 1) + 
@@ -111,14 +116,16 @@ export class Unit extends MetaGameObject{
   get pathToCamp(){ return this._pathToCamp; }
   get pathToDestination(){ return this._pathToDestination; }
   get closestHomeCity(){ return this._closestHomeCity; }
-
+  get isAtHomeCity(){ return this.tile == this.homeTile; }
+  
   rest(){ return UnitActions.rest.call(this); }
   guard(formation){ return UnitActions.guard.call(this, formation); }
   camp(...args){ return UnitActions.camp.call(this, ...args); }
   action(...args){ return UnitActions.action.call(this, ...args); }
   pillage(){ return UnitActions.pillage.call(this); }
   endTurn(){ return UnitActions.endTurn.call(this); }
-
+  
+  isEnemy(gameObject){ return this.player.isEnemy(gameObject); }
   getNaturalFormation(tile){
     let {x, y} = tile;
     return [x - this.x, y - this.y];
@@ -181,7 +188,7 @@ export class Unit extends MetaGameObject{
     return sourceTile.bfs(
       tile => tile.city && tile.city.player === this.player && 
         (tile.city.foodStorage >= this.totalUnits || tile.city === this.homeTile),
-      tile => !tile.hasEnemy(this),
+      tile => !tile.hasOther(this),
       ...args
     ) || this.calculatePathToHomeCityFromCamp();
   }
@@ -194,13 +201,13 @@ export class Unit extends MetaGameObject{
   calculatePathToHomeCityFromCamp(sourceTile = this.tile){
     return this.campTile.aStarSearch(
       this.homeTile,
-      tile => !tile.hasEnemy(this)
+      tile => !tile.hasOther(this)
     );
   }
   calculatePathToCamp(sourceTile = this.tile){
     return this.campTile.aStarSearch(
       sourceTile,
-      tile => !tile.hasEnemy(this)
+      tile => !tile.hasOther(this)
     );
   }
   calculatePathToDestination(sourceTile = this.tile){
@@ -208,7 +215,7 @@ export class Unit extends MetaGameObject{
 
     return sourceTile.aStarSearch(
       destinationTile,
-      tile => tile === destinationTile || !tile.hasEnemy(this)
+      tile => tile === destinationTile || !tile.hasOther(this)
     );
   }
   calculateMoralityBonus(){
@@ -309,7 +316,8 @@ export class Unit extends MetaGameObject{
     this._pathToClosestHomeCityFromCamp = this.calculatePathToClosestHomeCityFromCamp();
     this._pathToCamp = this.calculatePathToCamp();
     this._pathToDestination = this.calculatePathToDestination();
-    this._closestHomeCity = this.pathToClosestHomeCityFromCamp.slice(-1)[0].city;
+    this._closestHomeCity = this.tile.city ??
+      this.pathToClosestHomeCityFromCamp.slice(-1)[0].city;
   }
 
   getValidCampPath(destinationTile){
@@ -331,7 +339,7 @@ export class Unit extends MetaGameObject{
     return this.tile.aStarSearch(
       destinationTile, 
       tile => 
-        (!tile.hasUnit || tile === destinationTile && tile.hasEnemy(this) )
+        (!tile.hasUnit || tile === destinationTile && tile.hasOther(this) )
     )
   }
 

@@ -3,9 +3,10 @@ import createComponent from "../../util/easyjs.js";
 import VirtualDOM from "../../util/virtual-dom.js";
 
 export default class MetaAnnotation extends VirtualDOM{
-  constructor({gameObject, className, isOpaque}, ...children){
+  constructor({gameObject, className, isOpaque, title}, ...children){
     super('div', {
       className: 'annotation-wrapper',
+      title,
     }, 
       createComponent('div', {
         className: `annotation${className ? ` ${className}` : ''}`,

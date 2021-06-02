@@ -1,11 +1,13 @@
 import createComponent from "../../util/easyjs.js";
 import MetaAnnotation from "./meta-annotation.js";
+import * as UnitActions from "../../actions/unit-actions.js";
 
 export default class UnitAnnotation extends MetaAnnotation{
   constructor(gameObject, className, icon, ...props){
     super(
       { gameObject,
-        className: "unit-annotation"
+        className: "unit-annotation",
+        title: `Total Units: ${gameObject.totalUnits}\nBattle Units: ${gameObject.battleUnits}`
       }, 
       createComponent("div", {className: "overlapping-emoji"}, 
         createComponent("div", {}, '🛡'),
@@ -15,8 +17,9 @@ export default class UnitAnnotation extends MetaAnnotation{
     );
     
   }
+
   update(action){
-    if (action?.type === 'battle'){
+    if (action?.type === UnitActions.BATTLE){
       const casualtyIndicator = this._dom.querySelector('.casualty-indicator');
       casualtyIndicator.classList.add('trigger');
       casualtyIndicator.innerHTML = action.casualty;
@@ -24,11 +27,12 @@ export default class UnitAnnotation extends MetaAnnotation{
       setTimeout(() => {
         casualtyIndicator.classList.remove('trigger');
       }, 400);
-      
-      
-      // casualtyIndicator.style.opacity = 0;
-      
     }
+
+    this.setAttribute('title', 
+      `Total Units: ${this.gameObject.totalUnits}\nBattle Units: ${this.gameObject.battleUnits}`
+    );
+    
     MetaAnnotation.prototype.update.call(this, action);
   }
 }

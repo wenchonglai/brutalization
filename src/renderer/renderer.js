@@ -245,7 +245,7 @@ export default class Renderer extends VirtualDOM{
     const residualCols = legions % normalCols;
     this._x = x * PIXEL_PER_GRID;
     this._y = y * PIXEL_PER_GRID;
-    
+
     const imageData = this.unitCanvas.getImageData(
       this._x, this._y, PIXEL_PER_GRID, PIXEL_PER_GRID
     );

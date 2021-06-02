@@ -83,7 +83,7 @@ export function action(destinationTile, formation, path){
   path ||= this.tile.aStarSearch(
     destinationTile,
     tile => !tile.hasUnit ||
-      tile === destinationTile && tile.hasEnemy(this)
+      tile === destinationTile && tile.hasOther(this)
   );
   
   if (!path) return;
@@ -91,7 +91,11 @@ export function action(destinationTile, formation, path){
   const targetTile = path[1];
 
   if (!targetTile) return;
-
+  
+  if (targetTile.hasOther()){
+    for (let unit of targetTile.units)
+      this.player.declareWar(unit.player);
+  }
   let enemy = targetTile.getEnemy(this);
 
   if (targetTile === destinationTile && enemy){
@@ -125,9 +129,11 @@ export function action(destinationTile, formation, path){
     moralityDelta *= 3 * Math.abs(casualty1 - casualty2) / (casualty1 + casualty2);
 
     this.dispatch({type: BATTLE, casualty: casualty1, morality: moralityDelta - 0.25});
-    enemy.dispatch({type: BATTLE, movePoints: 0, casualty: casualty2, morality: -moralityDelta - 0.25});
-
+    enemy.dispatch({type: BATTLE, movePoints: 0, casualty: casualty2, morality: - moralityDelta - 0.25});
     enemy.updatePaths();
+
+    this.homeCity?.receiveCasualty(casualty1);
+    enemy.homeCity?.receiveCasualty(casualty2);
   } else {
     const costDistance = this.tile.getEuclideanCostDistance(targetTile);
     const foodLoads = {...this.foodLoads};
@@ -162,9 +168,8 @@ function updateMovePoints(){
   // dispatch the next action if the unit still has move points once the turn is ended
   if (this.movePoints >= 0){
     this.dispatch(this.actionQueue.shift());
-
+    
     let {type, cancelCondition, ...args} = this.nextCommand || {};
-
     this[type.toLowerCase()]?.(...Object.values(args));
   }
 
@@ -181,7 +186,9 @@ function calculateNonBattleCasualties(){
   // calculate death
   const isPandemic = Math.random() <= this.calculatePandemicPossibility();
   const baseCasualtyRate = Math.random() * (
-    1 + this.pandemicStage
+    this.isAtHomeCity ? 0 : 
+      this.tile._improvements.size > 0 ? 0.5 : 1
+      + this.pandemicStage
   ) / 64;
   const battleUnitCasualtyRate = Math.min(
     baseCasualtyRate + Math.random() * (
@@ -205,6 +212,8 @@ function calculateNonBattleCasualties(){
   this.weakDispatch({ type: RECEIVE_CASUALTIES,
     isPandemic, battleUnitCasualties, logisticUnitCasualties
   });
+  
+  this.homeCity?.receiveCasualty(totalCasualties);
 
   if (this.totalUnits <= 0){
     this.destruct();

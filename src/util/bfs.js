@@ -1,4 +1,4 @@
-export default function bfs(findFunc, pathFunc, {
+export default function bfs(findFunc, pathFunc = () => true, {
   maxCostDistance = 1024,
   returnAll = false
 } = {}){

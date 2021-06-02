@@ -11,7 +11,7 @@ export class City extends Settlement{
   static setCity(name, city){ this.cities.set(name, city) }
   static deleteCity(name){ this.cities.delete(name); }
 
-  constructor({player, tile, population, initialFoodStorage = population * 60}){
+  constructor({player, tile, population, name, initialFoodStorage = population * 60}){
     const tiles = new Set();
     
     let totalRuralPopulation = population * 10;
@@ -35,7 +35,7 @@ export class City extends Settlement{
       }
     }
 
-    super({player, tile, state: {
+    super({player, tile, name, state: {
       tiles,
       populations: {civilian: population, military: 0},
       trainLevel: 1,
@@ -52,7 +52,9 @@ export class City extends Settlement{
   register({player, tile}){
     for (let name of CITY_NAMES[player.id])
       if (!City.getCity(name)){
-        this._name = name;
+        if (this._name === undefined)
+          this._name = name;
+
         City.setCity(this.name, this);
         break;
       }
@@ -139,13 +141,14 @@ export class City extends Settlement{
     let urbanPopulation = this.urbanPopulation;
 
     urbanPopulation += urbanPopulation * POPULATION_GROWTH_RATE | 0;
-    Object.assign(this.state.populations, {urbanPopulation});
+    Object.assign(this.state.populations, {civilian: urbanPopulation});
     this.tiles.forEach(tile => tile.grow());
   }
   train(){ this.state.trainLevel += 1; }
   receiveMilitaryUnits(units){
-    const toCity = units * this
-    let toTiles = units - toUrban;
-    this.population.drafted = Math.max(this.population.drafted - urban, 0)
+    this.populations.military = Math.max(this.populations.military - urban, 0)
+  }
+  receiveCasualty(casualty){
+    CityActions.receiveCasualty.call(this, casualty)
   }
 }
