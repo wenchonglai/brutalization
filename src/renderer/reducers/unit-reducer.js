@@ -47,6 +47,7 @@ export default function unitActionReducer(state, action){
         formation: action.formation
       };
     }
+
     case UnitActions.PILLAGE: {
       newState.movePoints -= 2;
       newState.tirednessLevel += 0.125;
@@ -79,11 +80,10 @@ export default function unitActionReducer(state, action){
     case UnitActions.BATTLE: {
       newState.movePoints -= action.movePoints ?? 2;
       newState.tirednessLevel += 1;
-      newState.morality += action.morality;
-      newState.battleUnits -= action.casualty;
+      newState.battleUnits = Math.max(newState.battleUnits - action.casualty, 0);
       newState.experience += Math.random() * 3;
 
-      return newState;
+      return {...newState, morality: action.morality, formation: action.formation || this.formation};
     }
     case UnitActions.ADD_MOVEPOINTS: {
       newState.movePoints = Math.min(1, state.movePoints + 2);

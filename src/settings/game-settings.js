@@ -1,4 +1,4 @@
-export const PER_LEVEL_RURAL_GRID_HOUSEHOLD_CAPACITY = 30 * 30 * 9;
+export const PER_LEVEL_RURAL_GRID_HOUSEHOLD_CAPACITY = 50 * 50 * 9;
 
 export const POPULATION_GROWTH_RATE = 1 / 256; // per month
 
@@ -20,6 +20,8 @@ export const MONTHS = [
 export const PLAYER_COLORS = [
   '#32a8ff',
   '#ff9a01',
-  '#ff3266',
+  '#ff329a',
   '#9f7fff',
+  '#ff6632',
+  '#32cf9a',
 ];

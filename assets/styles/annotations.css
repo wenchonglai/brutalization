@@ -5,7 +5,7 @@ div.annotation{
   background-color: #cfcfcf;
   user-select: none;
   transform-origin: 50% 44px;
-  transform: translate(-50%, -70px) scale(0.8);
+  transform: translate(-50%, -72px) scale(0.8);
   text-align: center;
   font-size: 22px;
   line-height: 36px;
@@ -25,7 +25,7 @@ div.city-annotation{
   min-width: 36px;
   width: max-content;
   padding: 0 8px;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 div.unit-annotation::after{

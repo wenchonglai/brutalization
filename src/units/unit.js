@@ -44,7 +44,7 @@ export class Unit extends MetaGameObject{
   }
 
   deregister(){
-    this.player._unresolved.delete(this);
+    this.player._unresolved?.delete(this);
     MetaGameObject.prototype.deregister.call(this);
   }
 
@@ -283,10 +283,10 @@ export class Unit extends MetaGameObject{
         chargeTime * (enemyIsDenselyFormed ? 0.5 : 1)
     );
   }
-  calculateFormationBonus(enemy, formation, targetTile){
+  calculateFormationBonus(enemy, formation){
     return this._calculateFormationBonus(
       this.formation,
-      this.getFormationWhileMoving(targetTile),
+      this.getFormationWhileMoving(enemy.tile),
       formation,
       enemy.formation
     );
@@ -328,8 +328,8 @@ export class Unit extends MetaGameObject{
       (tile, costDistance) => 
         costDistance < 15 &&
         this.player.accessibleTiles.has(tile) &&
-        (!tile.camp && !(tile.city && tile.city.player !== this.player) ) &&
-        (!tile.hasUnit || this.tile === destinationTile ) ||
+        !(tile.city && tile.city.player !== this.player) &&
+        ( !tile.hasUnit || this.tile === destinationTile ) ||
         tile == this.campTile || tile == this.tile
     );
   }
@@ -344,5 +344,15 @@ export class Unit extends MetaGameObject{
 
   getFormationWhileMoving(targetTile){
     return [targetTile.x - this.x, targetTile.y - this.y];
+  }
+
+  getPathToClosestTarget({maxCostDistance = 20} = {}){
+    return this.tile.bfs(
+      tile => {
+        return tile.hasEnemy(this)
+      },
+      () => true,
+      {maxCostDistance}
+    );
   }
 } 

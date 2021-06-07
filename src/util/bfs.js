@@ -1,6 +1,6 @@
 export default function bfs(findFunc, pathFunc = () => true, {
   maxCostDistance = 1024,
-  returnAll = false
+  returnAll = false,
 } = {}){
   if (!pathFunc(this)) return;
 

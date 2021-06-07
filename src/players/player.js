@@ -11,6 +11,7 @@ export default class Player{
     this._attitudes = new Map();
     this._viewport = {x: 0, y: 0};
     this._selected = undefined;
+    this._capital = undefined;
     this._isTurn = true;
   }
   get id(){ return this._id; }
@@ -22,11 +23,18 @@ export default class Player{
   get viewport(){ return this._viewport; }
   get selected(){ return this._selected; }
   get accessibleTiles(){ return this._accessibleTiles; } 
+  get capital(){ return this._capital; }
+  get defeated(){ return this.capital.player !== this;}
+  get wins(){
+    return this.game.players
+      .filter(player => player !== this)
+      .every(player => player.defeated);
+  }
   
   isEnemy(obj){
     let player = obj?.player || obj;
 
-    return this.attitudes.get(player) < 0;
+    return (this.attitudes.get(player) ?? 0) < 0;
   }
 
   getAttitude(obj){
@@ -63,9 +71,13 @@ export default class Player{
   register(gameObject){
     gameObject._player = this;
 
-    
     if (gameObject instanceof Unit) this.units.add(gameObject)
-    else if (gameObject instanceof City) this.cities.add(gameObject)
+    else if (gameObject instanceof City){
+      if (this.cities.size === 0)
+        this._capital = gameObject;
+
+      this.cities.add(gameObject);
+    }
     else if (gameObject instanceof Improvement) this.improvements.add(gameObject);
 
     this.game.addToScene(gameObject);
@@ -128,6 +140,9 @@ export default class Player{
   declareWar(player){
     this.setAttitude(player, -1);
     player.setAttitude(this, -1);
+
+    for (let city of player.cities)
+      player.update(city);
   }
 
   negotiatePeace(player){

@@ -67,10 +67,12 @@ export default class MetaGameObject{
     return enemies.size > 0 ? enemies : false;
   }
 
-  isEnemy(gameObject){ return this.player.isEnemy(gameObject); }
-  getClosestEnemy({maxCostDistance = 15}){
+  isEnemy(gameObject){ 
+    return this.player.isEnemy(gameObject);
+  }
+  getClosestPathToOtherUnit({maxCostDistance = 15} = {}){
     return this.tile.bfs(
-      tile => tile.hasEnemy(this),
+      tile => tile.hasOther(this),
       () => true,
       {maxCostDistance}
     );

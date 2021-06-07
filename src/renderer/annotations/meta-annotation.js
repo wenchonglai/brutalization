@@ -3,28 +3,29 @@ import createComponent from "../../util/easyjs.js";
 import VirtualDOM from "../../util/virtual-dom.js";
 
 export default class MetaAnnotation extends VirtualDOM{
-  constructor({gameObject, className, isOpaque, title}, ...children){
+  constructor({gameObject, className, isOpaque, title}, ...contents){
     super('div', {
       className: 'annotation-wrapper',
       title,
-    }, 
-      createComponent('div', {
-        className: `annotation${className ? ` ${className}` : ''}`,
-        style: {
-          backgroundColor: gameObject.player.color + (isOpaque ? 'bf' : '')
-        },
-        onClick: (e) => {
-          gameObject.player.focus(gameObject);
-        },
-      }, ...children)
-    );
+    });
 
     this._gameObject = gameObject;
+    this._annotation = createComponent('div', {
+      className: `annotation${className ? ` ${className}` : ''}`,
+      style: {
+        backgroundColor: gameObject.player.color + (isOpaque ? 'bf' : '')
+      },
+      onClick: (e) => {
+        gameObject.player.focus(gameObject);
+      }
+    }, ...contents);
 
+    this.append(this.annotation);
     this.update();
   }
 
   get gameObject(){ return this._gameObject; }
+  get annotation(){ return this._annotation; }
 
   update(){
     this.setStyles({

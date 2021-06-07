@@ -23,7 +23,7 @@ export function guard(formation = [0, 0]){
   });
 }
 
-export function camp(destinationTile, formation, path){
+export function camp(destinationTile, formation = [0, 0], path){
   const pathToClosestHomeCity = this.calculatePathToClosestHomeCity();
 
   if (destinationTile === this.tile) {
@@ -37,7 +37,7 @@ export function camp(destinationTile, formation, path){
     return;
   };
 
-  path ||= this.tile.aStarSearch(destinationTile, tile => !tile.hasUnit);
+  path ||= this.getValidCampPath(destinationTile);
 
   if (!path) return;
 
@@ -54,6 +54,8 @@ export function camp(destinationTile, formation, path){
         this.getNaturalFormation(targetTile),
       nextCommand: { type: CAMP, destinationTile, formation }
     });
+
+
   }
 }
 
@@ -78,21 +80,22 @@ export function pillage(){
   });
 }
 
-export function action(destinationTile, formation, path){
+export function action(destinationTile, formation = [0, 0], path, args){
   if (destinationTile === this.tile) return;
 
-  path ||= this.tile.aStarSearch(
-    destinationTile,
-    tile => !tile.hasUnit ||
-      tile === destinationTile && tile.hasOther(this)
-  );
+  path ||= this.getValidActionPath(destinationTile);
   
   if (!path) return;
 
   const targetTile = path[1];
 
   if (!targetTile) return;
-  
+
+  if (targetTile.city){
+    siege.call(this, targetTile.city, formation);
+    return;
+  }
+
   if (targetTile.hasOther())
     for (let unit of targetTile.units)
       if (!unit.isEnemy(this))
@@ -105,42 +108,9 @@ export function action(destinationTile, formation, path){
 
   let enemy = targetTile.getEnemy(this);
 
-  if (targetTile === destinationTile && enemy){
-    const formationBonus = 
-      this.calculateFormationBonus(enemy, formation, targetTile);
-    const militaryMight1 = 
-      this.calculateMilitaryMight() * 
-      (1 + Math.min(formationBonus, 0)) * 
-      ( Math.random() * 1 + 1 ) / 1.5;
-    const militaryMight2 = 
-      enemy.calculateMilitaryMight() * 
-      (1 + Math.max(-formationBonus, 0)) *
-      ( Math.random() * 1 + 1 ) / 1.5;
-    const tolerableCasualty1 = 
-      this.calculateTolerableCasualtyRate() * this.battleUnits * ((Math.random() + 2) / 2.5);
-    const tolerableCasualty2 = 
-      enemy.calculateTolerableCasualtyRate() * enemy.battleUnits * ((Math.random() + 2) / 2.5);
-
-    let casualty1, casualty2, moralityDelta = 1;
-
-    if (tolerableCasualty1 / militaryMight2 > tolerableCasualty2 / militaryMight1 ){
-      casualty1 = tolerableCasualty1 | 0;
-      casualty2 = tolerableCasualty1 * militaryMight1 / militaryMight2 | 0;
-    } else {
-      casualty2 = tolerableCasualty2 | 0;
-      casualty1 = tolerableCasualty2 * militaryMight2 / militaryMight1 | 0;
-      moralityDelta = -1;
-    }
-
-    moralityDelta *= 3 * Math.abs(casualty1 - casualty2) / (casualty1 + casualty2);
-
-    this.dispatch({type: BATTLE, casualty: casualty1, morality: moralityDelta - 0.25});
-    enemy.dispatch({type: BATTLE, movePoints: 0, casualty: casualty2, morality: - moralityDelta - 0.25});
-    enemy.updatePaths();
-
-    this.homeCity?.receiveCasualty(casualty1);
-    enemy.homeCity?.receiveCasualty(casualty2);
-  } else {
+  if (targetTile === destinationTile && enemy)
+    battle.call(this, enemy, formation, path, args);
+  else {
     const costDistance = this.tile.getEuclideanCostDistance(targetTile);
     const foodLoads = {...this.foodLoads};
 
@@ -170,13 +140,76 @@ export function action(destinationTile, formation, path){
   }
 }
 
+function battle(enemy, formation = [0, 0], path, {isInCity = false} = {}){
+  const formationBonus = 
+    this.calculateFormationBonus(enemy, isInCity ? formation : [0, 0]) + 
+    (isInCity ? 0 : -0.2);
+  const militaryMight1 = 
+    this.calculateMilitaryMight() * 
+    (1 + Math.max(formationBonus, 0)) * 
+    ( Math.random() * 1 + 1 ) / 1.5;
+  const militaryMight2 = 
+    enemy.calculateMilitaryMight() * 
+    (1 + Math.max(-formationBonus, 0)) *
+    ( Math.random() * 1 + 1 ) / 1.5 * 
+    ( isInCity ? 2 : 1);
+  const tolerableCasualty1 = 
+    this.calculateTolerableCasualtyRate() * this.battleUnits * ((Math.random() + 2) / 2.5);
+  const tolerableCasualty2 = 
+    enemy.calculateTolerableCasualtyRate() *
+    enemy.battleUnits * ((Math.random() + 2) / 2.5) *
+    ( isInCity ? 10 : 1 );
+
+  let casualty1, casualty2, moralityDelta = 1;
+
+  if (tolerableCasualty1 / militaryMight2 > tolerableCasualty2 / militaryMight1 ){
+    casualty1 = tolerableCasualty1 | 0;
+    casualty2 = tolerableCasualty1 * militaryMight1 / militaryMight2 | 0;
+  } else {
+    casualty2 = tolerableCasualty2 | 0;
+    casualty1 = tolerableCasualty2 * militaryMight2 / militaryMight1 | 0;
+    moralityDelta = -1;
+  }
+
+  casualty1 = Math.min(this.battleUnits, casualty1);
+  casualty2 = Math.min(enemy.battleUnits, casualty2);
+  moralityDelta *= 3 * Math.abs(casualty1 - casualty2) / (casualty1 + casualty2);
+
+  this.dispatch({
+    type: BATTLE, casualty: casualty1, morality: moralityDelta - 0.25, formation
+  });
+  enemy.dispatch({
+    type: BATTLE, movePoints: 0, casualty: casualty2, morality: - moralityDelta - 0.25
+  });
+  enemy.updatePaths();
+
+  this.homeCity?.receiveCasualty(casualty1);
+  enemy.homeCity?.receiveCasualty(casualty2);
+}
+
+function siege(city, formation, path){
+  if (!city.isEnemy(this))
+    this.player.declareWar(city.player);
+  
+  const militaryMight1 = 
+    this.calculateMilitaryMight() * ( Math.random() * 1 + 1 ) / 1.5;
+
+  const cityMilitaryMight = 
+    city.calculateMilitaryMight() * ( Math.random() * 1 + 1 ) / 1.5;
+
+  for (let unit of city.tile.units){
+    battle.call(this, unit, formation, path, {isInCity: true})
+  }
+  
+};
+
 function updateMovePoints(){
   // dispatch the next action if the unit still has move points once the turn is ended
   if (this.movePoints >= 0){
     this.dispatch(this.actionQueue.shift());
     
     let {type, cancelCondition, ...args} = this.nextCommand || {};
-    this[type.toLowerCase()]?.(...Object.values(args));
+    this[type?.toLowerCase()]?.(...Object.values(args));
   }
 
   // update the paths to camp/closest home city once the turn is ended

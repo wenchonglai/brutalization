@@ -88,6 +88,8 @@ export function receiveCasualty(casualty){
   const N = tiles.length;
   const totalMilitary = tiles.reduce((acc, el) => acc + el.militaryPopulation, 0);
 
+  casualty = Math.min(casualty, this.totalPopulations.military);
+
   while (casualty > 0){
     for (let tile of tiles){
       let delta = Math.min(
@@ -108,6 +110,9 @@ export function receiveCasualty(casualty){
 
       if (casualty <= 0) break;
     }
+
+    if (tiles.every(tile => tile.militaryPopulation === 0))
+      break;
   }
 }
 // draft(level){

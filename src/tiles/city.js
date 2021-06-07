@@ -90,7 +90,10 @@ export class City extends Settlement{
   get overallDraftLevel(){
     let {rural, urban, military} = this.totalPopulations;
 
-    return military / (rural + urban);
+    return military / (rural + urban + military);
+  }
+  get isCapital(){
+    return this.player.capital === this;
   }
 
   draft(){ return CityActions.draft.call(this); }
@@ -126,14 +129,22 @@ export class City extends Settlement{
 
     this.tiles.forEach(tile => tile.endTurn());
     this.storage.food = this.storage.food * 0.95 | 0;
-    this.state.draftHistory += this.totalPopulations.military;
     
-    if (this.round % 12 === 0) {
-      this.storage.food += (
-        this.totalPopulations.rural - this.draftHistory / 12
-      ) * 6 | 0;
+    // tax
+    if ([10, 11, 0].includes(this.round % 12)) {
+      for (let tile of this.tiles)
+        if (!tile.hasEnemy(this))
+          this.storage.food += (
+            tile.civilianPopulation * Math.max(
+              1 - this.draftHistory / (9 * this.totalPopulations.rural),
+              0
+            )
+          ) * 2 | 0;
 
-      this.state.draftHistory = 0;
+      if (this.round % 12 === 0)
+        this.state.draftHistory = 0;
+    } else {
+      this.state.draftHistory += this.totalPopulations.military;
     }
   }
 
@@ -150,5 +161,9 @@ export class City extends Settlement{
   }
   receiveCasualty(casualty){
     CityActions.receiveCasualty.call(this, casualty)
+  }
+
+  calculateMilitaryMight(){
+    return (this.urbanPopulation ** 0.4) * (1 - this.overallDraftLevel) * 0.3;
   }
 }

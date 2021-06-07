@@ -27,8 +27,8 @@ function handleMouseMoveCreator(mode){
         const targetTile = Tile.getTile({x, y});
         
         path = mode === 'camp' ? 
-            gameObject.getValidCampPath(targetTile) :
-            gameObject.getValidActionPath(targetTile)
+          gameObject.getValidCampPath(targetTile) :
+          gameObject.getValidActionPath(targetTile)
 
         if (path && mode !== 'camp') 
           mode = path[path.length - 1].hasUnit ? 'attack' : 'action';

@@ -24,6 +24,4 @@ export default class MetaGeography extends MetaGameObject{
     civilian += civilian * POPULATION_GROWTH_RATE | 0;
     Object.assign(this._populations, {civilian});
   }
-
-
 }

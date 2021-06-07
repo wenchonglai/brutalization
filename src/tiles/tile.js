@@ -104,8 +104,12 @@ export default class Tile extends MetaGeography{
     return this.getEuclideanDistance(tile) * 2;
   }
 
-  costDistanceTo(tile, ...args){
-    const path = this.aStarSearch(tile, ...args);
+  costDistanceTo(
+    destinationTile, 
+    pathFunc = () => true, 
+    ...args
+  ){
+    const path = this.aStarSearch(destinationTile, pathFunc, ...args);
     return Tile.getPathCostDistance(path);
   }
 
