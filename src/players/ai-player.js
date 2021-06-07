@@ -79,7 +79,6 @@ export default class AIPlayer extends Player{
 
       // if home city is not safe and no unit is moving back, force the first unit to move back
       if (!homeCityIsSafe){
-        console.log(unitsByCostDistance)
         unitsByCostDistance?.[0]?.[0]?.camp(city.tile);
         homeCityIsSafe = true;
       }

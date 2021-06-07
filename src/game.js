@@ -8,7 +8,7 @@ import { City } from "./tiles/city.js";
 import { MONTHS, PLAYER_COLORS } from "./settings/game-settings.js"
 
 export default class Game{
-  constructor({numberOfPlayers = 6, mapSize = 16} = {}){
+  constructor({numberOfPlayers = 6  , mapSize = 16} = {}){
     this._players = [];
     this._currentPlayerId = 0;
     this._mapSize = mapSize;
@@ -68,10 +68,11 @@ export default class Game{
         tile: Tile.getTile({x: 7, y: 5}), 
         population: 5000,
       }),
-      new City({  // YangDi
+      new City({  // XinZheng
         player: this.players[3],
-        tile: Tile.getTile({x: 9, y: 9}), 
-        population: 3000
+        tile: Tile.getTile({x: 10, y: 8}), 
+        population: 4000,
+        name: 'XinZheng'
       }),
       new City({  // YeWang
         player: this.players[3],
@@ -79,16 +80,15 @@ export default class Game{
         population: 4000,
         name: 'YeWang'
       }),
-      new City({  // XinZheng
+      new City({  // YangDi
         player: this.players[3],
-        tile: Tile.getTile({x: 10, y: 8}), 
-        population: 4000,
-        name: 'XinZheng'
+        tile: Tile.getTile({x: 9, y: 9}), 
+        population: 3500,
       }),
       new City({ // Daliang
         player: this.currentPlayer,
         tile: Tile.getTile({x: 11, y: 7}), 
-        population: 6000
+        population: 60000
       }),
       new City({ // Ye
         player: this.currentPlayer,
@@ -187,7 +187,7 @@ export default class Game{
 
   nextTurn(){
     if (this.currentPlayer.wins)
-      return this.gameOver(this.currentPlayer);
+      return this.gameOver(true);
 
     this._currentPlayerId = (this.currentPlayerId + 1) % this.numberOfPlayers;
     this.ui.updateDate(this.date);
@@ -211,5 +211,13 @@ export default class Game{
 
   changeMapInteraction(type, {gameObject, command}){
     this.renderer.changeMapInteraction(type, {gameObject, command})
+  }
+
+  gameOver(humanPlayerWins){
+    if (humanPlayerWins === true){
+      alert("You Win!")
+    } else {
+      alert("You Lose!");
+    }
   }
 }

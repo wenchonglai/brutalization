@@ -47,9 +47,12 @@ export class City extends Settlement{
 
     for (let t of tiles)
       t._player = this.player;
+
+    this._units = new Set();
   }
 
   register({player, tile}){
+
     for (let name of CITY_NAMES[player.id])
       if (!City.getCity(name)){
         if (this._name === undefined)
@@ -67,6 +70,7 @@ export class City extends Settlement{
   }
 
   get name(){ return this._name; }
+  get units(){ return this._units; }
   get tiles(){ return Array.from(this.state.tiles); }
   get populations(){ return this.state.populations; }
   get urbanPopulation(){ return this.populations.civilian; }
@@ -160,7 +164,7 @@ export class City extends Settlement{
     this.populations.military = Math.max(this.populations.military - urban, 0)
   }
   receiveCasualty(casualty){
-    CityActions.receiveCasualty.call(this, casualty)
+    CityActions.receiveMilitaryChange.call(this, -casualty)
   }
 
   calculateMilitaryMight(){

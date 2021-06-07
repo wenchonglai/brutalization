@@ -24,7 +24,7 @@ export default class Player{
   get selected(){ return this._selected; }
   get accessibleTiles(){ return this._accessibleTiles; } 
   get capital(){ return this._capital; }
-  get defeated(){ return this.capital.player !== this;}
+  get defeated(){ return this.capital?.player !== this;}
   get wins(){
     return this.game.players
       .filter(player => player !== this)
@@ -69,6 +69,7 @@ export default class Player{
   }
 
   register(gameObject){
+    gameObject._player?.deregister(gameObject);
     gameObject._player = this;
 
     if (gameObject instanceof Unit) this.units.add(gameObject)

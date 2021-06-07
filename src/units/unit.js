@@ -28,6 +28,9 @@ export class Unit extends MetaGameObject{
         }
       }
     });
+    
+    this._homeCity = homeTile.city;
+    this.homeCity.units.add(this);
 
     Object.freeze(this._originalState);
 
@@ -39,7 +42,7 @@ export class Unit extends MetaGameObject{
   }
 
   destruct(){
-    this.tile.food += this.totalFoodLoad;
+    this.homeCity.units.delete(this);
     this.deregister();
   }
 
@@ -74,12 +77,15 @@ export class Unit extends MetaGameObject{
   get cityTile(){ return this._cityTile; }
   get cityTile(){ return this._cityTile; }
   get homeTile(){ return this.originalState.tile; }
-  get homeCity(){ return this.homeTile.city; }
+  get homeCity(){ return this._homeCity; }
   get campTile(){ return this.state.campTile; }
   get battleUnits(){ return this.state.battleUnits; }
   get logisticUnits(){ return this.state.logisticUnits; }
   get totalUnits(){ return this.logisticUnits + this.battleUnits; }
   get foodLoads(){ return this.state.foodLoads; }
+  get totalFoodLoad(){
+    return Object.values(this.foodLoads).reduce((sum, el) => sum + el, 0);
+  }
   get experience(){ return this.state.experience; }
   get pandemicStage(){ return this.state.pandemicStage; }
   get tirednessLevel(){ return this.state.tirednessLevel; }
@@ -116,13 +122,14 @@ export class Unit extends MetaGameObject{
   get pathToCamp(){ return this._pathToCamp; }
   get pathToDestination(){ return this._pathToDestination; }
   get closestHomeCity(){ return this._closestHomeCity; }
-  get isAtHomeCity(){ return this.tile == this.homeTile; }
+  get isAtHomeCity(){ return this.tile.city == this.homeCity; }
   
   rest(){ return UnitActions.rest.call(this); }
   guard(formation){ return UnitActions.guard.call(this, formation); }
   camp(...args){ return UnitActions.camp.call(this, ...args); }
   action(...args){ return UnitActions.action.call(this, ...args); }
   pillage(){ return UnitActions.pillage.call(this); }
+  disarm(){ return UnitActions.disarm.call(this); }
   endTurn(){ return UnitActions.endTurn.call(this); }
   
   getNaturalFormation(tile){
@@ -170,7 +177,9 @@ export class Unit extends MetaGameObject{
           return {skipResolve: true};
         }),
         pillage: moveable && this.pillage.bind(this),
-        disarm: moveable && this.destruct.bind(this)
+        disarm: moveable && this.tile.city ?
+          this.disarm.bind(this) :
+          'Cannot disarm outside of a city.'
       }
     }
   }
@@ -187,7 +196,7 @@ export class Unit extends MetaGameObject{
   calculatePathToClosestHomeCity(sourceTile = this.tile, ...args){
     return sourceTile.bfs(
       tile => tile.city && tile.city.player === this.player && 
-        (tile.city.foodStorage >= this.totalUnits || tile.city === this.homeTile),
+        (tile.city.foodStorage >= this.totalUnits || tile.city === this.homeCity),
       tile => !tile.hasOther(this),
       ...args
     ) || this.calculatePathToHomeCityFromCamp();
@@ -200,7 +209,7 @@ export class Unit extends MetaGameObject{
   }
   calculatePathToHomeCityFromCamp(sourceTile = this.tile){
     return this.campTile.aStarSearch(
-      this.homeTile,
+      this.homeCity.tile,
       tile => !tile.hasOther(this)
     );
   }

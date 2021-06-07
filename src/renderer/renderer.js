@@ -292,6 +292,7 @@ export default class Renderer extends VirtualDOM{
 
   render(tile){
     if (!tile) return;
+    console.log(tile)
     this._clear(tile);
     this._renderNature(tile);
     this._renderFarm(tile);

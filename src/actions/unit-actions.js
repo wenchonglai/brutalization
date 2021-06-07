@@ -1,3 +1,5 @@
+import * as CityActions from "./city-actions.js";
+
 export const REST = 'REST';
 export const GUARD = 'GUARD';
 export const CAMP = 'CAMP';
@@ -8,6 +10,11 @@ export const ADD_MOVEPOINTS = 'ADD_MOVEPOINTS';
 export const RECEIVE_CASUALTIES = 'RECEIVE_CASUALTIES';
 export const RECEIVE_FOOD_CHANGE = 'RECEIVE_FOOD_CHANGE';
 export const CANCEL_ACTION = 'CANCEL_ACTION';
+
+function destroyIfNoUnitLeft(){
+  if (this.totalUnits <= 0)
+    this.destruct();
+}
 
 export function rest(){ 
   this.saveAction({
@@ -91,7 +98,7 @@ export function action(destinationTile, formation = [0, 0], path, args){
 
   if (!targetTile) return;
 
-  if (targetTile.city){
+  if (targetTile.city && targetTile.city.player !== this.player){
     siege.call(this, targetTile.city, formation);
     return;
   }
@@ -140,7 +147,14 @@ export function action(destinationTile, formation = [0, 0], path, args){
   }
 }
 
-function battle(enemy, formation = [0, 0], path, {isInCity = false} = {}){
+export function disarm(){
+  CityActions.receiveMilitaryChange.call(this.homeCity, -this.totalUnits);
+  CityActions.receiveCivilianChange.call(this.tile.city, this.totalUnits);
+  this.tile.city.storage.food += this.totalFoodLoad;
+  this.destruct();
+}
+
+function battle(enemy, formation = [0, 0], path, {isInCity = false, cityMilitaryMight = 0} = {}){
   const formationBonus = 
     this.calculateFormationBonus(enemy, isInCity ? formation : [0, 0]) + 
     (isInCity ? 0 : -0.2);
@@ -149,12 +163,16 @@ function battle(enemy, formation = [0, 0], path, {isInCity = false} = {}){
     (1 + Math.max(formationBonus, 0)) * 
     ( Math.random() * 1 + 1 ) / 1.5;
   const militaryMight2 = 
-    enemy.calculateMilitaryMight() * 
-    (1 + Math.max(-formationBonus, 0)) *
-    ( Math.random() * 1 + 1 ) / 1.5 * 
-    ( isInCity ? 2 : 1);
+    ( enemy.calculateMilitaryMight() * 
+      (1 + Math.max(-formationBonus, 0)) *
+      ( Math.random() * 1 + 1 ) / 1.5 + cityMilitaryMight
+    ) * ( isInCity ? 2 : 1);
+
   const tolerableCasualty1 = 
-    this.calculateTolerableCasualtyRate() * this.battleUnits * ((Math.random() + 2) / 2.5);
+    this.calculateTolerableCasualtyRate() * 
+    this.battleUnits * 
+    ((Math.random() + 2) / 2.5);
+
   const tolerableCasualty2 = 
     enemy.calculateTolerableCasualtyRate() *
     enemy.battleUnits * ((Math.random() + 2) / 2.5) *
@@ -163,16 +181,31 @@ function battle(enemy, formation = [0, 0], path, {isInCity = false} = {}){
   let casualty1, casualty2, moralityDelta = 1;
 
   if (tolerableCasualty1 / militaryMight2 > tolerableCasualty2 / militaryMight1 ){
-    casualty1 = tolerableCasualty1 | 0;
-    casualty2 = tolerableCasualty1 * militaryMight1 / militaryMight2 | 0;
+    casualty2 = Math.min(
+      tolerableCasualty1 *
+        (militaryMight1 / militaryMight2) ** (isInCity ? 0.5 : 1) | 0,
+      enemy.battleUnits
+    );
+    
+    casualty1 = Math.min(
+      tolerableCasualty1 | 0,
+      this.battleUnits,
+      casualty2 * (isInCity ? 1 : militaryMight2 / militaryMight1) | 0
+    );
   } else {
-    casualty2 = tolerableCasualty2 | 0;
-    casualty1 = tolerableCasualty2 * militaryMight2 / militaryMight1 | 0;
+    casualty1 = Math.min(
+      tolerableCasualty2 * militaryMight2 / militaryMight1 | 0,
+      this.battleUnits
+    );
+    casualty2 = Math.min(
+      tolerableCasualty2 | 0,
+      enemy.battleUnits,
+      casualty1 * militaryMight1 / militaryMight2 | 0
+    );
+    
     moralityDelta = -1;
   }
-
-  casualty1 = Math.min(this.battleUnits, casualty1);
-  casualty2 = Math.min(enemy.battleUnits, casualty2);
+  
   moralityDelta *= 3 * Math.abs(casualty1 - casualty2) / (casualty1 + casualty2);
 
   this.dispatch({
@@ -183,23 +216,30 @@ function battle(enemy, formation = [0, 0], path, {isInCity = false} = {}){
   });
   enemy.updatePaths();
 
-  this.homeCity?.receiveCasualty(casualty1);
-  enemy.homeCity?.receiveCasualty(casualty2);
+  this.homeCity && CityActions.receiveMilitaryChange.call(this.homeCity, -casualty1);
+  enemy.homeCity && CityActions.receiveMilitaryChange.call(enemy.homeCity, -casualty2);
+
+  destroyIfNoUnitLeft.call(this);
+  destroyIfNoUnitLeft.call(enemy);
 }
 
 function siege(city, formation, path){
   if (!city.isEnemy(this))
     this.player.declareWar(city.player);
   
-  const militaryMight1 = 
-    this.calculateMilitaryMight() * ( Math.random() * 1 + 1 ) / 1.5;
-
   const cityMilitaryMight = 
     city.calculateMilitaryMight() * ( Math.random() * 1 + 1 ) / 1.5;
 
-  for (let unit of city.tile.units){
-    battle.call(this, unit, formation, path, {isInCity: true})
-  }
+  for (let unit of city.tile.units)
+    battle.call(this, unit, formation, path, {isInCity: true, cityMilitaryMight});
+  
+  const militaryMight1 = 
+    this.calculateMilitaryMight() * ( Math.random() * 1 + 1 ) / 1.5;
+
+  const chanceOfSiege = militaryMight1 / (militaryMight1 + cityMilitaryMight);
+
+  if (city.tile.units.size === 0 && Math.random() < chanceOfSiege)
+    CityActions.fall.call(city, this.player);
   
 };
 
@@ -254,10 +294,7 @@ function calculateNonBattleCasualties(){
   
   this.homeCity?.receiveCasualty(totalCasualties);
 
-  if (this.totalUnits <= 0){
-    this.destruct();
-    return;
-  }
+  destroyIfNoUnitLeft.call(this);
 }
 
 function calculateFoodConsumption(){
