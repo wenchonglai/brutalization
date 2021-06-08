@@ -1,5 +1,5 @@
 import {City} from "../tiles/city.js"
-import { Unit } from "../units/unit.js";
+import {Unit} from "../units/unit.js";
 
 export const DRAFT = 'DRAFT';
 export const TRAIN = 'TRAIN';

@@ -17,6 +17,7 @@ export default class MetaAnnotation extends VirtualDOM{
       },
       onClick: (e) => {
         gameObject.player.focus(gameObject);
+        gameObject.game.changeMapInteraction("", {});
       }
     }, ...contents);
 
