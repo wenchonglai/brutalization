@@ -69,6 +69,7 @@ export function draft(){
       if (unit instanceof Unit){
         unit.state.battleUnits += actualUnitsDrafted;
         unit.state.foodLoads.camp += actualUnitsDrafted * 5;
+        unit.state.startingTotalUnits = Math.max(unit.state.startingTotalUnits, unit.totalUnits + actualUnitsDrafted);
         unit.player.update(unit);
         break;
       }
@@ -87,6 +88,8 @@ export function draft(){
 }
 
 export function receiveCivilianChange(amount){
+  if (amount === 0) return;
+
   const tiles = [...this.tiles, this].sort((a, b) => a.draftLevel - b.draftLevel);
   const N = tiles.length;
   const totalCivilian = tiles.reduce((acc, el) => acc + el.civilianPopulation, 0);
@@ -96,7 +99,7 @@ export function receiveCivilianChange(amount){
     Math.abs(amount), sign < 0 ? totalCivilian : Number.POSITIVE_INFINITY
   );
 
-  while (abs > 0)
+  while (abs > 0){
     for (let i in tiles){
       const tile = tiles[i];
       let delta = sign * Math.min(
@@ -112,18 +115,21 @@ export function receiveCivilianChange(amount){
 
       if (abs <= 0) break;
     }
+  }
 
   for (let i in tiles){
     const tile = tiles[i];
 
     if (tile === this)
-      tile.dispatch({ type: RECEIVE_CIVILIAN_CHANGE, amount: deltas[i] });
+      tile.dispatch({ type: RECEIVE_CIVILIAN_CHANGE, amount: deltas[i] ?? 0 });
     else 
-      tile.populations.civilian += deltas[i];
+      tile.populations.civilian += deltas[i] ?? 0;
   }
 }
 
 export function receiveMilitaryChange(amount){
+  if (amount === 0) return;
+
   const tiles = [...this.tiles, this].sort((a, b) => a.draftLevel - b.draftLevel);
   const N = tiles.length;
   const totalMilitary = tiles.reduce((acc, el) => acc + el.militaryPopulation, 0);
@@ -133,14 +139,14 @@ export function receiveMilitaryChange(amount){
     Math.abs(amount), sign < 0 ? totalMilitary : Number.POSITIVE_INFINITY
   );
 
-  while (abs > 0)
+  while (abs > 0){
     for (let i in tiles){
       const tile = tiles[i];
       let delta = sign * Math.min(
         Math.max(1, 
           (abs * tile.militaryPopulation / totalMilitary | 0)
         ),
-        sign < 0 ? tile.militaryPopulation : Number.POSITIVE_INFINITY,
+        sign < 0 ? (tile.militaryPopulation + (deltas[i] ?? 0)) : Number.POSITIVE_INFINITY,
         abs
       );
 
@@ -148,18 +154,15 @@ export function receiveMilitaryChange(amount){
       abs -= delta * sign
 
       if (abs <= 0) break;
-
-      // if (tiles.every(tile => tile.militaryPopulation === 0))
-      //   break;
     }
-
-  for ( let i in tiles){
+  }
+  for (let i in tiles){
     const tile = tiles[i];
     
     if (tile === this)
-      tile.dispatch({ type: RECEIVE_MILITARY_CHANGE, amount: deltas[i] });
+      tile.dispatch({ type: RECEIVE_MILITARY_CHANGE, amount: deltas[i] ?? 0 });
     else 
-      tile.populations.military += deltas[i];
+      tile.populations.military += deltas[i] ?? 0;
   }
 }
 
@@ -176,6 +179,7 @@ export const fall = function(player){
   for (let unit of units){
     unit.updatePaths();
     unit._homecity = unit.closestHomeCity ?? [...unit.players.cities][0];
+    
     if (!unit.homecity)
       unit.destruct();
   }

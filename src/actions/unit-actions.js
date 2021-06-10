@@ -10,10 +10,11 @@ export const ADD_MOVEPOINTS = 'ADD_MOVEPOINTS';
 export const RECEIVE_CASUALTIES = 'RECEIVE_CASUALTIES';
 export const RECEIVE_FOOD_CHANGE = 'RECEIVE_FOOD_CHANGE';
 export const CANCEL_ACTION = 'CANCEL_ACTION';
+export const SIEGE = 'SIEGE';
 
 function destroyIfNoUnitLeft(){
-  if (this.totalUnits <= 0)
-    this.destruct();
+  if (this.battleUnits <= 0)
+    disarm.call(this);
 }
 
 export function rest(){ 
@@ -34,11 +35,14 @@ export function camp(destinationTile, formation = [0, 0], path){
   const pathToClosestHomeCity = this.calculatePathToClosestHomeCity();
 
   if (destinationTile === this.tile) {
+    this.register({tile: destinationTile});
+    this.registerCamp(destinationTile);
     this.dispatch({ type: CAMP, 
       targetTile: destinationTile,
       costDistance: 1,
       pathToClosestHomeCity: pathToClosestHomeCity,
       formation: formation,
+      overallWearinessLevel: this.overallWearinessLevel
     });
 
     return;
@@ -53,16 +57,17 @@ export function camp(destinationTile, formation = [0, 0], path){
   if (!targetTile.hasUnit){
     let costDistance = this.tile.getEuclideanCostDistance(targetTile);
 
+    this.register({tile: targetTile});
+    this.registerCamp(targetTile);
     this.dispatch({ type: CAMP, targetTile,
       costDistance,
       pathToClosestHomeCity: pathToClosestHomeCity,
       formation: targetTile === destinationTile ? 
         formation :
         this.getNaturalFormation(targetTile),
+      overallWearinessLevel: this.overallWearinessLevel,
       nextCommand: { type: CAMP, destinationTile, formation }
     });
-
-
   }
 }
 
@@ -90,13 +95,9 @@ export function pillage(){
 export function action(destinationTile, formation = [0, 0], path, args){
   if (destinationTile === this.tile) return;
 
-  path ||= this.getValidActionPath(destinationTile);
-  
-  if (!path) return;
+  path ||= this.getValidActionPath(destinationTile); if (!path) return;
 
-  const targetTile = path[1];
-
-  if (!targetTile) return;
+  const targetTile = path[1]; if (!targetTile) return;
 
   if (targetTile.city && targetTile.city.player !== this.player){
     siege.call(this, targetTile.city, formation);
@@ -134,12 +135,14 @@ export function action(destinationTile, formation = [0, 0], path, args){
       foodLoads.battleUnits = 0;
     }
 
+    this.register({tile: targetTile});
     this.dispatch({ type: ACTION,
       targetTile,
       costDistance,
       foodLoads,
       formation: formation,
       pathToClosestHomeCity: this.calculatePathToClosestHomeCity(),
+      overallWearinessLevel: this.overallWearinessLevel,
       nextCommand: targetTile === destinationTile ? 
         undefined :
         { type: ACTION, destinationTile, formation }
@@ -148,72 +151,87 @@ export function action(destinationTile, formation = [0, 0], path, args){
 }
 
 export function disarm(){
+  const city = this.tile.city || this.closestHomeCity;
   CityActions.receiveMilitaryChange.call(this.homeCity, -this.totalUnits);
-  CityActions.receiveCivilianChange.call(this.tile.city, this.totalUnits);
-  this.tile.city.storage.food += this.totalFoodLoad;
+  CityActions.receiveCivilianChange.call(city, this.totalUnits);
+  city.storage.food += this.totalFoodLoad;
   this.destruct();
 }
 
-function battle(enemy, formation = [0, 0], path, {isInCity = false, cityMilitaryMight = 0} = {}){
-  const formationBonus = 
-    this.calculateFormationBonus(enemy, isInCity ? formation : [0, 0]) + 
-    (isInCity ? 0 : -0.2);
+function battle(enemy, formation = [0, 0], path, {city} = {}){
+  const formationBonus = city ? -0.2 :
+    this.calculateFormationBonus(enemy, city ? formation : [0, 0]);
+
   const militaryMight1 = 
     this.calculateMilitaryMight() * 
     (1 + Math.max(formationBonus, 0)) * 
     ( Math.random() * 1 + 1 ) / 1.5;
   const militaryMight2 = 
-    ( enemy.calculateMilitaryMight() * 
+    ( Unit.calculateMilitaryMight(enemy, city) * 
       (1 + Math.max(-formationBonus, 0)) *
-      ( Math.random() * 1 + 1 ) / 1.5 + cityMilitaryMight
-    ) * ( isInCity ? 2 : 1);
+      ( Math.random() * 1 + 1 ) / 1.5
+    ) * ( city ? 1.5 : 1);
 
-  const tolerableCasualty1 = 
+  const tolerableCasualty1 = Math.min(
     this.calculateTolerableCasualtyRate() * 
-    this.battleUnits * 
-    ((Math.random() + 2) / 2.5);
+      ((Math.random() + 1) / 1.5) *
+      ( city ? 3 : 1 ),
+    1
+  ) * this.startingTotalUnits;
 
-  const tolerableCasualty2 = 
+  const tolerableCasualty2 = Math.min(
     enemy.calculateTolerableCasualtyRate() *
-    enemy.battleUnits * ((Math.random() + 2) / 2.5) *
-    ( isInCity ? 10 : 1 );
+    ((Math.random() + 1) / 1.5) *
+    ( city ? 9 : 1 ),
+    1
+  ) * enemy.startingTotalUnits;
 
   let casualty1, casualty2, moralityDelta = 1;
 
-  if (tolerableCasualty1 / militaryMight2 > tolerableCasualty2 / militaryMight1 ){
+  if (tolerableCasualty1 * militaryMight1 / militaryMight2 > tolerableCasualty2 ){
     casualty2 = Math.min(
       tolerableCasualty1 *
-        (militaryMight1 / militaryMight2) ** (isInCity ? 0.5 : 1) | 0,
+        (militaryMight1 / militaryMight2) ** (city ? 0.5 : 1),
       enemy.battleUnits
-    );
+    ) | 0;
     
     casualty1 = Math.min(
-      tolerableCasualty1 | 0,
-      this.battleUnits,
-      casualty2 * (isInCity ? 1 : militaryMight2 / militaryMight1) | 0
-    );
+      tolerableCasualty1,
+      casualty2 * (city ? 1 : militaryMight2 / militaryMight1),
+      this.battleUnits
+    ) | 0;
   } else {
     casualty1 = Math.min(
-      tolerableCasualty2 * militaryMight2 / militaryMight1 | 0,
+      tolerableCasualty2 * militaryMight2 / militaryMight1,
       this.battleUnits
-    );
-    casualty2 = Math.min(
-      tolerableCasualty2 | 0,
-      enemy.battleUnits,
-      casualty1 * militaryMight1 / militaryMight2 | 0
-    );
+    ) | 0;
     
+    casualty2 = Math.min(
+      tolerableCasualty2,
+      casualty1 * militaryMight1 / militaryMight2,
+      enemy.battleUnits
+    ) | 0;
     moralityDelta = -1;
   }
   
-  moralityDelta *= 3 * Math.abs(casualty1 - casualty2) / (casualty1 + casualty2);
+  moralityDelta *= (3 * Math.abs(casualty1 - casualty2) / (casualty1 + casualty2) || 0);
 
   this.dispatch({
-    type: BATTLE, casualty: casualty1, morality: moralityDelta - 0.25, formation
+    type: BATTLE, 
+    casualty: casualty1, 
+    morality: moralityDelta - 0.25, 
+    formation, 
+    tirednessLevel: 1
   });
+
   enemy.dispatch({
-    type: BATTLE, movePoints: 0, casualty: casualty2, morality: - moralityDelta - 0.25
+    type: BATTLE, 
+    casualty: casualty2, 
+    movePoints: 0, 
+    tirednessLevel: Math.min(1, militaryMight1 / militaryMight2 || 0), 
+    morality: -moralityDelta - 0.25
   });
+
   enemy.updatePaths();
 
   this.homeCity && CityActions.receiveMilitaryChange.call(this.homeCity, -casualty1);
@@ -227,20 +245,39 @@ function siege(city, formation, path){
   if (!city.isEnemy(this))
     this.player.declareWar(city.player);
   
+  const originalBattleUnits = this.battleUnits;
   const cityMilitaryMight = 
     city.calculateMilitaryMight() * ( Math.random() * 1 + 1 ) / 1.5;
+  let tolerableCasualty1 = 
+    Math.min(this.calculateTolerableCasualtyRate() * 5, 0.5) * 
+    this.battleUnits *
+    ((Math.random() + 1) / 1.5) | 0;
+  const tolerableCasualty2 = city.civilianPopulation / 10 * ((Math.random() + 1) / 1.5);
 
   for (let unit of city.tile.units)
-    battle.call(this, unit, formation, path, {isInCity: true, cityMilitaryMight});
+    battle.call(this, unit, formation, path, {city});
+
+  if (city.tile.units.size > 0) return;
   
   const militaryMight1 = 
     this.calculateMilitaryMight() * ( Math.random() * 1 + 1 ) / 1.5;
-
-  const chanceOfSiege = militaryMight1 / (militaryMight1 + cityMilitaryMight);
-
-  if (city.tile.units.size === 0 && Math.random() < chanceOfSiege)
-    CityActions.fall.call(city, this.player);
   
+  let casualty1 = originalBattleUnits - this.battleUnits; 
+
+  if (tolerableCasualty1 * militaryMight1 / cityMilitaryMight > tolerableCasualty2){
+    casualty1 = tolerableCasualty2 * cityMilitaryMight / militaryMight1 | 0;
+    CityActions.fall.call(city, this.player);
+    this.dispatch({
+      type: BATTLE, casualty: casualty1, morality: 10, formation, tirednessLevel: 1
+    });
+  } else {
+    casualty1 = tolerableCasualty1;
+    this.dispatch({
+      type: BATTLE, casualty: casualty1, morality: -0.5, formation, tirednessLevel: 1
+    });
+  }
+
+  console.log(casualty1);
 };
 
 function updateMovePoints(){
@@ -292,7 +329,7 @@ function calculateNonBattleCasualties(){
     isPandemic, battleUnitCasualties, logisticUnitCasualties
   });
   
-  this.homeCity?.receiveCasualty(totalCasualties);
+  this.homeCity?.handleCasualty(totalCasualties);
 
   destroyIfNoUnitLeft.call(this);
 }

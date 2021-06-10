@@ -1,4 +1,4 @@
-export const PER_LEVEL_RURAL_GRID_HOUSEHOLD_CAPACITY = 50 * 50 * 9;
+export const PER_LEVEL_RURAL_GRID_HOUSEHOLD_CAPACITY = 100 * 100 * 9;
 
 export const POPULATION_GROWTH_RATE = 1 / 256; // per month
 

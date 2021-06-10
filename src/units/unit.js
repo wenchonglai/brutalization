@@ -9,6 +9,7 @@ export class Unit extends MetaGameObject{
     super({player, tile, 
       originalState: { tile: homeTile, population },
       state: {
+        startingTotalUnits: population,
         battleUnits: population,
         logisticUnits: 0 ,
         unitsOnLeave: 0,
@@ -41,7 +42,15 @@ export class Unit extends MetaGameObject{
     this.player.update(this);
   }
 
+  static calculateMilitaryMight(...gameObjects){
+    return gameObjects.filter(el => el)
+      .reduce((acc, el) => 
+        acc + el.calculateMilitaryMight() ** 2, 0
+      ) ** 0.5;
+  }
+
   destruct(){
+    console.warn(this)
     this.homeCity.units.delete(this);
     this.deregister();
   }
@@ -55,7 +64,7 @@ export class Unit extends MetaGameObject{
   dispatch(action){
     if (this.actionQueue?.[0]?.type !== action?.type)
       this.clearActions();
-
+    
     MetaGameObject.prototype.dispatch.call(this, action, () => {
       if (
         [ UnitActions.CAMP, 
@@ -82,6 +91,7 @@ export class Unit extends MetaGameObject{
   get battleUnits(){ return this.state.battleUnits; }
   get logisticUnits(){ return this.state.logisticUnits; }
   get totalUnits(){ return this.logisticUnits + this.battleUnits; }
+  get startingTotalUnits(){ return this.state.startingTotalUnits; }
   get foodLoads(){ return this.state.foodLoads; }
   get totalFoodLoad(){
     return Object.values(this.foodLoads).reduce((sum, el) => sum + el, 0);
@@ -111,8 +121,8 @@ export class Unit extends MetaGameObject{
   }
   get overallWearinessLevel(){
     return (
-      1 + Math.max(0, this.tirednessLevel - 1) + 
-      Math.max(0, this.battleUnitHungerLevel - 1) + 
+      1 + Math.max(0, this.tirednessLevel - 1) / 2 + 
+      Math.max(0, this.battleUnitHungerLevel - 1) / 2 + 
       Math.max(0, this.pandemicStage - 1) ** 0.5 / 4
     );
   }
@@ -146,14 +156,13 @@ export class Unit extends MetaGameObject{
         "battle units": this.battleUnits,
         "total units": this.totalUnits,
         experience: approximate(this.experience),
-        hunger: this.battleUnitHungerLevel,
+        hunger: this.battleUnitHungerLevel.toFixed(2),
         "food (in camp)": this.foodLoads.camp,
         "food (with battle units)": this.foodLoads.battleUnits,
-        stamina: this.staminaLevel,
-        morality: this.morality,
-        pandemic: this.pandemicStage,
-        movePoints: this.movePoints,
-        formation: this.formation,
+        stamina: this.staminaLevel.toFixed(2),
+        morality: this.morality.toFixed(2),
+        // pandemic: this.pandemicStage,
+        movePoints: this.movePoints.toFixed(2),
         "next command": this.nextCommand?.type ?? ""
       },
       commands: {
@@ -234,10 +243,11 @@ export class Unit extends MetaGameObject{
     return (this.battleUnits ** 0.5) * 
       this.staminaLevel * 
       this.calculateMoralityBonus() * 
-      ((1 + this.experience) ** 0.5);
+      ((1 + this.experience) ** 0.5) * 
+      ( this.nextCommand?.type === UnitActions.REST ? 0.5 : 1 );
   }
   calculateTolerableCasualtyRate(){
-    return ((1 + this.experience) ** 0.5) * this.calculateMoralityBonus() / 64;
+    return (1 + this.experience) ** 0.5 / 64;
   }
   
   get isDenselyFormed(){ return !!this.formation?.every(el => el === 0); }

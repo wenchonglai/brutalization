@@ -20,8 +20,10 @@ export default class MetaGameObject{
   }
 
   deregister(){
-    if (this.game?.gameObject === this)
+    if (this.game?.gameObject === this){
+      console.log(this.player._unresolved)
       this.game.focus(Array.from(this.player._unresolved)[0]);
+    }
 
     this.tile?.deregister(this);
     this.player?.deregister(this);
@@ -43,7 +45,7 @@ export default class MetaGameObject{
 
     callback?.();
 
-    this.player.update(this, action);
+    this.player?.update(this, action);
   }
 
   get game(){ return this.player.game; }

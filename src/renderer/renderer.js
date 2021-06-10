@@ -70,8 +70,7 @@ export default class Renderer extends VirtualDOM{
     this.append(this._annotationLayer);
 
     this.changeMapInteraction("", {});
-
-    this.transform({x: 0, y: 0, zoom: 1});
+    this.moveTo({x: 8, y: 8});
 
     document.addEventListener('keydown', (e) => {
       switch (e.key){
@@ -154,22 +153,24 @@ export default class Renderer extends VirtualDOM{
   appendAnnotation(annotation){
     this.annotationLayer.append(annotation);
   }
+  moveTo({x, y}){
+    const coords = mapToScreen({x, y});
+    const zoom = this._transformAttributes?.zoom ?? 1;
 
+    this.transform({
+      x: (window.innerWidth >> 1) + 128 - coords.x * zoom,
+      y: (window.innerHeight >> 1) - coords.y * zoom,
+      zoom
+    });
+  }
   focus(gameObject){
     if (gameObject){
       this._gameObject = gameObject;
     }
 
     if (gameObject){
-      const {x, y} = mapToScreen(gameObject);
-      const zoom = this._transformAttributes?.zoom ?? 1;
-
       this.mapSVG.reset();
-      this.transform({
-        x: (window.innerWidth >> 1) + 128 - x * zoom,
-        y: (window.innerHeight >> 1) - y * zoom,
-        zoom
-      });
+      this.moveTo(gameObject);
   
       SceneObject.focus(gameObject);
     }
@@ -227,6 +228,10 @@ export default class Renderer extends VirtualDOM{
       const isEven = (tile.x + tile.y) % 2 === 0;
       this._drawImage(this.mapCanvas, tile, isEven ? 'farm1' : 'farm2');
     }
+
+    if (tile.city){
+      this._renderCity(tile);
+    }
     
   }
   _renderCamp(tile){
@@ -238,7 +243,6 @@ export default class Renderer extends VirtualDOM{
 
     if (!unit) return;
     const {battleUnits, x, y, campTile, formation, isDenselyFormed} = unit;
-
     const legions = battleUnits / 250 | 0;
     const normalCols = isDenselyFormed ? Math.ceil(legions ** 0.5) : 12;
     const rows = Math.ceil(legions / normalCols);
@@ -292,7 +296,6 @@ export default class Renderer extends VirtualDOM{
 
   render(tile){
     if (!tile) return;
-    console.log(tile)
     this._clear(tile);
     this._renderNature(tile);
     this._renderFarm(tile);

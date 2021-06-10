@@ -85,15 +85,11 @@ export default class Game{
         tile: Tile.getTile({x: 9, y: 9}), 
         population: 3500,
       }),
-      new City({ // Daliang
-        player: this.currentPlayer,
-        tile: Tile.getTile({x: 11, y: 7}), 
-        population: 60000
-      }),
       new City({ // Ye
         player: this.currentPlayer,
         tile: Tile.getTile({x: 11, y: 5}), 
-        population: 5000
+        population: 5000,
+        name: "Ye",
       }),
       new City({ // YueYang
         player: this.players[1], 
@@ -167,11 +163,16 @@ export default class Game{
         tile: Tile.getTile({x: 13, y: 5}), 
         population: 3500
       }),
+      new City({ // Daliang
+        player: this.currentPlayer,
+        tile: Tile.getTile({x: 11, y: 7}), 
+        population: 60000
+      }),
     ];
 
-    for (let city of cities)
-      for (let i = 0; i < (city.population / 1000 | 0); i++)
-        city.draft();
+    // for (let city of cities)
+    //   for (let i = 0; i < (city.population / 1000 | 0); i++)
+    //     city.draft();
   }
 
   start(){

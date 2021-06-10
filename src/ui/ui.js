@@ -64,16 +64,18 @@ export default class UI extends VirtualDOM{
     if (gameObject){
       this._gameObject = gameObject;
       this._player = gameObject.player;
+    } else {
+      this._gameObject = undefined;
     }
     
     this._endable = !this._player._unresolved?.size;
 
-    let { information, commands } = this.gameObject.toUserInterface() || {};
+    let { information, commands } = this.gameObject?.toUserInterface() || {};
 
-    this.informationPanel.update(information);
+    this.informationPanel.update(information ?? {});
 
     this.commandsPanel.update({
-      commands, 
+      commands: commands ?? {}, 
       selectedIndex: gameObject?.actionQueue[0]?.type,
       handleResolve: this.handleResolve.bind(this),
       endable: this._endable

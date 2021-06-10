@@ -160,14 +160,12 @@ export class City extends Settlement{
     this.tiles.forEach(tile => tile.grow());
   }
   train(){ this.state.trainLevel += 1; }
-  receiveMilitaryUnits(units){
-    this.populations.military = Math.max(this.populations.military - urban, 0)
-  }
-  receiveCasualty(casualty){
-    CityActions.receiveMilitaryChange.call(this, -casualty)
+
+  handleCasualty(casualty){
+    CityActions.receiveMilitaryChange.call(this, -casualty);
   }
 
   calculateMilitaryMight(){
-    return (this.urbanPopulation ** 0.4) * (1 - this.overallDraftLevel) * 0.3;
+    return (this.urbanPopulation ** 0.5) * (1 - this.overallDraftLevel) / 2;
   }
 }

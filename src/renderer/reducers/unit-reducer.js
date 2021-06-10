@@ -32,16 +32,13 @@ export default function unitActionReducer(state, action){
       };
     }
     case UnitActions.CAMP: {
-      this.register({tile: action.targetTile});
-      
       newState.movePoints -= action.costDistance;
       newState.tirednessLevel += 0.125 * action.costDistance;
       newState.experience += Math.random() * action.costDistance/ 4;
 
       if (newState.tirednessLevel > 1)
-        newState.morality -= 0.125 * action.costDistance * this.overallWearinessLevel;
-        this.registerCamp(action.targetTile);
-
+        newState.morality -= 0.125 * action.costDistance * action.overallWearinessLevel;
+      
       return {...newState, 
         campTile: action.targetTile,
         formation: action.formation
@@ -63,27 +60,25 @@ export default function unitActionReducer(state, action){
       return newState;
     }
     case UnitActions.ACTION: {
-      this.register({tile: action.targetTile});
-
       newState.formation = action.formation;
       newState.foodLoads = action.foodLoads;
       newState.movePoints -= action.costDistance;
       newState.tirednessLevel += 0.25 * action.costDistance;
-      newState.morality -= 0.25 * this.overallWearinessLevel;
+      newState.morality -= 0.25 * action.overallWearinessLevel;
       newState.experience += Math.random() * action.costDistance / 2;
 
       if (newState.tirednessLevel > 1)
-        newState.morality -= 0.25 * action.costDistance * this.overallWearinessLevel;
+        newState.morality -= 0.25 * action.costDistance * action.overallWearinessLevel;
 
       return newState;
     }
     case UnitActions.BATTLE: {
       newState.movePoints -= action.movePoints ?? 2;
-      newState.tirednessLevel += 1;
+      newState.tirednessLevel += action.tirednessLevel;
       newState.battleUnits = Math.max(newState.battleUnits - action.casualty, 0);
       newState.experience += Math.random() * 3;
 
-      return {...newState, morality: action.morality, formation: action.formation || this.formation};
+      return {...newState, morality: newState.morality + action.morality, formation: action.formation || newState.formation};
     }
     case UnitActions.ADD_MOVEPOINTS: {
       newState.movePoints = Math.min(1, state.movePoints + 2);
@@ -100,6 +95,10 @@ export default function unitActionReducer(state, action){
     }
     case UnitActions.RECEIVE_FOOD_CHANGE: {
       return {...newState, ...action.data}
+    }
+    case UnitActions.SIEGE: {
+      newState.morality += 10;
+      return newState;
     }
     default: {
       return newState;
