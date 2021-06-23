@@ -55,7 +55,7 @@ Brutalization is a turn-based single player strategy board game that implements 
       get action(){ return this.actionQueue[0]; }
     }
     ```
-- Classes inheriting self-developed VirtualDOM class for ui
+- Classes inheriting self-developed VirtualDOM class for UI
   - Per the project requirements, libraries such as React and Redux were not allowed. This game incorporated React-Style classes that allows for the creation, manipulation, and removal DOM nodes:
     ```js
     import createComponent from "./easyjs.js";
